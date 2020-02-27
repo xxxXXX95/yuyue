@@ -1,0 +1,5 @@
+.DS_store
+cookie.json
+node_modules
+config.js
+*.log
