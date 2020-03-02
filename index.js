@@ -1,7 +1,8 @@
 const LoginClass = require('./loginClass');
 const loginHelper = new LoginClass();
-const nodeSchedule = require('node-schedule');
-
+// const cron = require('node-cron');
+const cluster = require('cluster');
+const timer = require('./timer');
 // 登录
 async function login() {
   if (await loginHelper.getLoginStatus()) {
@@ -62,20 +63,50 @@ async function buyMaskProgress(skuId, time, concurrency = 5) {
   // 可以先获取 orderData
   await loginHelper.getOrderData(skuId);
 
-  console.log('waiting...等待时间到达');
-  const job1 = nodeSchedule.scheduleJob({ hour: 10 }, async function() {
-    console.log('开始job');
-    await loginHelper.requestItemPage(skuId);
-    await loginHelper.requestCheckoutPage(skuId);
+  console.log('waiting...等待时间到达', time);
+  // const job1 = cron.schedule(time, async function() {
+  console.log('开始job');
+  const res = await loginHelper.requestItemPage(skuId);
+  if (!res) {
+    console.log('没有抢购链接, 抢购失败未开始可能');
+    return;
+  }
+  await loginHelper.requestCheckoutPage(skuId);
 
-    for (let i = 0; i < concurrency; i++) {
-      loginHelper.submitOrder(skuId);
-      await new Promise(r => setTimeout(r, 500));
-    }
-    await loginHelper.submitOrder(skuId);
-  });
+  for (let i = 0; i < concurrency; i++) {
+    loginHelper.submitOrder(skuId);
+    await new Promise(r => setTimeout(r, 500));
+  }
+  //});
 }
 
-// 每天早晨10点
+// 每天早晨10点, 100011551632 20:00, 100011521400 21:00, 10点开抢
 // { hour: 0-23, minute: 0-59}
-buyMaskProgress('100011521400', { hour: 10, minute: 0 });
+const d1 = '* 20 * * *';
+const d2 = '* 21 * * *';
+
+// 2020/3/3
+const dd1 = new Date(2020, 2, 3, 10, 0, 0, 400).getTime();
+
+const pool = [
+  { skuId: '100011521400', date: d2 },
+  // { skuId: '100011551632', date: d1 }
+  // { skuId: '100006394713', date: d1 },
+  // { skuId: '100011621642', date: d1 }
+];
+
+if (cluster.isWorker) {
+  console.log('progress work', process.pid);
+  const item = pool.shift();
+
+  timer(dd1, function() {
+    // console.log(new Date().toLocaleString());
+    buyMaskProgress(item.skuId);
+  });
+} else {
+  for (i = 0; i < pool.length; i++) {
+    cluster.fork();
+  }
+
+  console.log('main progress');
+}

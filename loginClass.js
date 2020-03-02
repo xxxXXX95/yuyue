@@ -24,6 +24,8 @@ class Login {
     // this.reserveUrl = new Map();
     this.config = config;
     this.initInfo = null;
+    this.reserveUrl = 'url';
+
     // this.getLocalCookie();
     // const cookie = fs.readFile()
     // this.reqTools.Cookie.fromJSON()
@@ -281,6 +283,7 @@ class Login {
             .replace('user_routing', 'captcha.html');
 
           console.log(`已经获取到抢购链接: ${seckillUrl}`);
+          this.reserveUrl = seckillUrl;
           try {
             this.request(seckillUrl, {
               method: 'GET',
@@ -299,7 +302,8 @@ class Login {
         await new Promise(r => setTimeout(r, 100));
       } catch (e) {}
     }
-    console.log('没获取到抢购链接, 退出了')
+    console.log('没获取到抢购链接, 退出了');
+    return '';
   };
 
   requestCheckoutPage = async skuId => {
@@ -428,10 +432,12 @@ class Login {
       try {
         const res = await this.request(url + `?=${qs.stringify(payload)}`, {
           method: 'POST',
-          body: JSON.stringify(data),
+          body: qs.stringify(data),
           headers
         });
+
         const r = await res.json();
+
         result = r;
         if (r.success) {
           const { orderId, totalMoney, pcUrl } = r;
@@ -443,7 +449,8 @@ class Login {
           return;
         }
       } catch (e) {
-        console.log('抢购失败, 马上重试', retry);
+        console.log(e);
+        console.log('抢购失败, 马上重试', retry, result);
       }
       await new Promise(r => setTimeout(r, 1000));
     }
