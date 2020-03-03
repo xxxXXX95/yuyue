@@ -3,7 +3,7 @@ const timer = require('./timer');
 const { buyMaskProgress, makeReserve, login } = require('./jobs');
 
 // 年     月    日     时    分   秒     毫秒
-// 2020, 0-11, 0-30, 0-24, 0-60  0-60  0-1000
+// 2020, 0-11, 1-31, 0-24, 0-60  0-60  0-1000
 // 例如 2020-3-4 10:00:00.400
 // (2020, 2, 4, 10, 0, 0, 400)
 // 修改使用的时间
@@ -11,7 +11,7 @@ const { buyMaskProgress, makeReserve, login } = require('./jobs');
 // 2020/3/3 10:00:00.400
 const dd1 = new Date(2020, 2, 3, 10, 0, 0, 400).getTime();
 // 2020/3/3 20:00:00.400
-const dd2 = new Date(2020, 2, 3, 20, 0, 0, 400).getTime();
+const dd2 = new Date(2020, 2, 4, 20, 0, 0, 400).getTime();
 // 2020/3/3 21:00:00.400
 const dd3 = new Date(2020, 2, 3, 21, 0, 0, 400).getTime();
 
