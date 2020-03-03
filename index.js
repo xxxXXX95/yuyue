@@ -1,112 +1,40 @@
-const LoginClass = require('./loginClass');
-const loginHelper = new LoginClass();
-// const cron = require('node-cron');
 const cluster = require('cluster');
 const timer = require('./timer');
-// 登录
-async function login() {
-  if (await loginHelper.getLoginStatus()) {
-    console.log('cookie有效');
-    return;
-  }
+const { buyMaskProgress, makeReserve, login } = require('./jobs');
 
-  // save cookies
-  await loginHelper.getLoginPage();
-  // 获取二维码打印在终端上面
-  await loginHelper.getQRCode();
+// 年     月    日     时    分   秒     毫秒
+// 2020, 0-11, 0-30, 0-24, 0-60  0-60  0-1000
+// 例如 2020-3-4 10:00:00.400
+// (2020, 2, 4, 10, 0, 0, 400)
+// 修改使用的时间
 
-  const retry = 85;
-  let ticket = '';
-  for (let i = 0; i < retry; i++) {
-    const res = await loginHelper.checkLoginStatus();
-    if (res.code !== 200) {
-      console.log(`code: ${res.code}, message: ${res.msg}`);
-      await new Promise(r => {
-        setTimeout(r, 2000);
-      });
-    } else {
-      console.info('已完成手机客户端确认');
-      ticket = res.ticket;
-      break;
-    }
-  }
-  if (!ticket) {
-    console.log('二维码过期, 马上更新');
-  }
-  const res = await loginHelper.validateQRTicket(ticket);
-  if (res.returnCode != 0) {
-    return console.log('二维码校验失败');
-  }
-  console.info('二维码登录成功');
-  loginHelper.isLogin = true;
-  // save cookies
-  loginHelper.saveJson();
-  // console.log(res.headers.raw())
-}
-
-async function makeReserve(skuId, time = {}) {
-  await login();
-  await loginHelper.getReserveUrl(skuId);
-}
-
-// 抢购
-async function buyMaskProgress(skuId, time, concurrency = 5) {
-  if (!skuId) {
-    console.error('skuId 缺少');
-    return;
-  }
-  if (!time) {
-    console.error('缺少定时时间');
-    return;
-  }
-  await login();
-  // 可以先获取 orderData
-  await loginHelper.getOrderData(skuId);
-
-  console.log('waiting...等待时间到达', time);
-  // const job1 = cron.schedule(time, async function() {
-  console.log('开始job');
-  const res = await loginHelper.requestItemPage(skuId);
-  if (!res) {
-    console.log('没有抢购链接, 抢购失败未开始可能');
-    return;
-  }
-  await loginHelper.requestCheckoutPage(skuId);
-
-  for (let i = 0; i < concurrency; i++) {
-    loginHelper.submitOrder(skuId);
-    await new Promise(r => setTimeout(r, 500));
-  }
-  //});
-}
-
-// 每天早晨10点, 100011551632 20:00, 100011521400 21:00, 10点开抢
-// { hour: 0-23, minute: 0-59}
-const d1 = '* 20 * * *';
-const d2 = '* 21 * * *';
-
-// 2020/3/3
+// 2020/3/3 10:00:00.400
 const dd1 = new Date(2020, 2, 3, 10, 0, 0, 400).getTime();
+// 2020/3/3 20:00:00.400
+const dd2 = new Date(2020, 2, 3, 20, 0, 0, 400).getTime();
+// 2020/3/3 21:00:00.400
+const dd3 = new Date(2020, 2, 3, 21, 0, 0, 400).getTime();
 
+// 修改这里, 添加skuId, 和抢购时间 date, 需要更改 月/日 时:分:秒:毫秒
 const pool = [
-  { skuId: '100011521400', date: d2 },
-  // { skuId: '100011551632', date: d1 }
-  // { skuId: '100006394713', date: d1 },
-  // { skuId: '100011621642', date: d1 }
+  // { skuId: '100011521400', date: dd1 },
+  { skuId: '100011551632', date: dd2 },
+  // { skuId: '100006394713', date: dd2 },
+  // { skuId: '100011621642', date: dd2 }
 ];
 
 if (cluster.isWorker) {
   console.log('progress work', process.pid);
   const item = pool.shift();
-
-  timer(dd1, function() {
-    // console.log(new Date().toLocaleString());
+  timer(item.date, function() {
+    console.log('执行时间:', new Date().toLocaleString());
     buyMaskProgress(item.skuId);
   });
 } else {
   for (i = 0; i < pool.length; i++) {
     cluster.fork();
   }
-
+  // 强制扫描登录重置24h
+  // login(true)
   console.log('main progress');
 }

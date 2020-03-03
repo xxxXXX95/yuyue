@@ -11,7 +11,7 @@ const util = require('util');
 // const cookie = require('cookie.json')
 const config = require('./config');
 
-class Login {
+class Tools {
   constructor() {
     this.isLogin = false;
     this.userAgent =
@@ -428,35 +428,37 @@ class Login {
       // return;
     }
     let result = null;
-    while (retry--) {
-      try {
-        const res = await this.request(url + `?=${qs.stringify(payload)}`, {
+    // while (retry--) {
+    try {
+      const res = await this.request(
+        url + `?=${qs.stringify(payload)}`,
+        {
           method: 'POST',
           body: qs.stringify(data),
           headers
-        });
+        },
+        true
+      );
 
-        const r = await res.json();
+      const r = await res.json();
 
-        result = r;
-        if (r.success) {
-          const { orderId, totalMoney, pcUrl } = r;
-          const msg = `抢购成功，订单号:${orderId}, 总价:${totalMoney}, 电脑端付款链接:${pcUrl}`;
-          console.info(msg);
-          if (this.config.messenger) {
-            this.sendToWechat(msg);
-          }
-          return;
-        }
-      } catch (e) {
-        console.log(e);
-        console.log('抢购失败, 马上重试', retry, result);
+      result = r;
+      if (r.success) {
+        const { orderId, totalMoney, pcUrl } = r;
+        const msg = `抢购成功，订单号:${orderId}, 总价:${totalMoney}, 电脑端付款链接:${pcUrl}`;
+        console.info(msg);
+        return result;
       }
-      await new Promise(r => setTimeout(r, 1000));
+    } catch (e) {
+      console.log(e);
+      //console.log('抢购失败, 马上重试', retry, result);
+      return result;
     }
+    // await new Promise(r => setTimeout(r, 1000));
+    //}
 
     // 失败了的推送
-    this.sendToWechat(JSON.stringify(result));
+    // this.sendToWechat(JSON.stringify(result));
   };
   sendToWechat = message => {
     if (!message) return;
@@ -469,4 +471,4 @@ class Login {
   };
 }
 
-module.exports = Login;
+module.exports = Tools;

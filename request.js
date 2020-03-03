@@ -27,7 +27,7 @@ class Request {
   parse = (cookie, options) => {
     return Cookie.parse(cookie, options);
   };
-  request = async (url, preParams = {}) => {
+  request = async (url, preParams = {}, ignoreCookie = false) => {
     const { headers = {} } = preParams;
     // const getCookies = util.promisify(this.cookiejar.getCookies)
     // const setCookie = util.promisify(this.cookiejar.setCookie)
@@ -47,6 +47,7 @@ class Request {
 
     return fetch(url, params)
       .then(res => {
+        if(ignoreCookie) return res
         const cookies = res.headers.raw()['set-cookie'];
         if (cookies) {
           cookies.map(Cookie.parse).forEach(cookie => {
