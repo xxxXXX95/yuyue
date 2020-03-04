@@ -1,5 +1,4 @@
 const qs = require('querystring');
-const fetch = require('node-fetch');
 const fs = require('fs');
 const Jimp = require('jimp');
 // const request = require('R')
@@ -25,6 +24,7 @@ class Tools {
     this.config = config;
     this.initInfo = null;
     this.reserveUrl = 'url';
+    this.qrUrl = '';
 
     // this.getLocalCookie();
     // const cookie = fs.readFile()
@@ -113,6 +113,11 @@ class Tools {
     });
   }
   async getQRCode() {
+    // 多进程共享等一个登录状态
+    if (this.qrUrl) {
+      qrcodeTerminal.generate(this.qrUrl, { small: true });
+      return;
+    }
     /**
      *
      */
@@ -143,6 +148,7 @@ class Tools {
     const qrUrl = await this.decodeQRCode(bff).catch(e => {
       console.log(e);
     });
+    this.qrUrl = qrUrl;
 
     qrcodeTerminal.generate(qrUrl, { small: true });
   }
@@ -452,7 +458,7 @@ class Tools {
     } catch (e) {
       console.log(e);
       //console.log('抢购失败, 马上重试', retry, result);
-      return result;
+      return {};
     }
     // await new Promise(r => setTimeout(r, 1000));
     //}
@@ -467,7 +473,7 @@ class Tools {
       text: '抢购结果',
       desp: message
     };
-    this.request(url + `?${qs.stringify(payload)}`);
+    return this.request(url + `?${qs.stringify(payload)}`);
   };
 }
 

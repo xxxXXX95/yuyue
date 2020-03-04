@@ -48,7 +48,7 @@ async function makeReserve(skuId, time = {}) {
 }
 
 // 抢购
-async function buyMaskProgress(skuId, time, concurrency = 5, ccy = 10) {
+async function buyMaskProgress(skuId, concurrency = 100) {
   if (!skuId) {
     console.error('skuId 缺少');
     return;
@@ -57,40 +57,22 @@ async function buyMaskProgress(skuId, time, concurrency = 5, ccy = 10) {
   await login();
   // 可以先获取 orderData
   await helper.getOrderData(skuId);
-
-  // const job1 = cron.schedule(time, async function() {
   console.log('开始job', new Date().toLocaleString());
-  // const res = await helper.requestItemPage(skuId);
-  // if (!res) {
-  //   console.log('没有抢购链接, 抢购失败未开始可能');
-  //   return;
-  // }
   await helper.requestCheckoutPage(skuId);
 
-  for (let i = 0; i <= ccy; i++) {
-    const p = [];
-    for (let i = 0; i < concurrency; i++) {
-      p.push(helper.submitOrder(skuId).catch(e => {}));
-    }
-    Promise.all(p).then(result => {
-      const validRes = result.filter(r => !!r);
-      validRes.forEach(r => {
-        if (r.success) {
-          helper.sendToWechat(r);
-          process.exit();
-        }
-        console.log(r);
-      });
-      if (i >= ccy) {
-        const msg = validRes.length > 0 ? JSON.stringify(msg[0]) : '';
-        // 已经循环完了
-        helper.sendToWechat('抢购失败', msg);
+  for (let i = 0; i <= concurrency; i++) {
+    helper.submitOrder(skuId).then(async r => {
+      if (r.success) {
+        await helper.sendToWechat(r);
+        process.exit();
+      }
+      if (i === concurrency) {
+        await helper.sendToWechat('抢购失败');
+        process.exit();
       }
     });
     await new Promise(r => setTimeout(r, 1000));
   }
-
-  //});
 }
 
 exports.buyMaskProgress = buyMaskProgress;
