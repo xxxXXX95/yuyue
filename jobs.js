@@ -58,8 +58,11 @@ async function buyMaskProgress(skuId, concurrency = 100) {
   // 可以先获取 orderData
   await helper.getOrderData(skuId);
   console.log('开始job', new Date().toLocaleString());
-  await helper.requestCheckoutPage(skuId);
-
+  const res = await helper.requestItemPage(skuId);
+  if (!res) {
+    console.log('没有抢购链接, 抢购失败未开始可能');
+    return;
+  }
   for (let i = 0; i <= concurrency; i++) {
     helper.submitOrder(skuId).then(async r => {
       if (r.success) {

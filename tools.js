@@ -453,8 +453,8 @@ class Tools {
         const { orderId, totalMoney, pcUrl } = r;
         const msg = `抢购成功，订单号:${orderId}, 总价:${totalMoney}, 电脑端付款链接:${pcUrl}`;
         console.info(msg);
-        return result;
       }
+      return result;
     } catch (e) {
       console.log(e);
       //console.log('抢购失败, 马上重试', retry, result);
