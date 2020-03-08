@@ -56,15 +56,17 @@ async function buyMaskProgress(skuId, concurrency = 100) {
 
   await login();
   // 可以先获取 orderData
-  await helper.getOrderData(skuId);
   console.log('开始job', new Date().toLocaleString());
   const res = await helper.requestItemPage(skuId);
+  await helper.getOrderData(skuId);
+
   if (!res) {
     console.log('没有抢购链接, 抢购失败未开始可能');
     return;
   }
   for (let i = 0; i <= concurrency; i++) {
     helper.submitOrder(skuId).then(async r => {
+      console.log(r);
       if (r.success) {
         await helper.sendToWechat(r);
         process.exit();
@@ -74,7 +76,7 @@ async function buyMaskProgress(skuId, concurrency = 100) {
         process.exit();
       }
     });
-    await new Promise(r => setTimeout(r, 1000));
+    await new Promise(r => setTimeout(r, 1500));
   }
 }
 

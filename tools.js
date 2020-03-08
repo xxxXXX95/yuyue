@@ -24,7 +24,7 @@ class Tools {
     this.config = config;
     this.initInfo = null;
     this.reserveUrl = 'url';
-    this.qrUrl = '';
+    this.hasGetCode = false;
 
     // this.getLocalCookie();
     // const cookie = fs.readFile()
@@ -114,10 +114,11 @@ class Tools {
   }
   async getQRCode() {
     // 多进程共享等一个登录状态
-    if (this.qrUrl) {
-      qrcodeTerminal.generate(this.qrUrl, { small: true });
+    if (this.hasGetCode) {
+      // qrcodeTerminal.generate(this.qrUrl, { small: true });
       return;
     }
+    this.hasGetCode = true
     /**
      *
      */
@@ -148,8 +149,6 @@ class Tools {
     const qrUrl = await this.decodeQRCode(bff).catch(e => {
       console.log(e);
     });
-    this.qrUrl = qrUrl;
-
     qrcodeTerminal.generate(qrUrl, { small: true });
   }
 
@@ -291,7 +290,7 @@ class Tools {
           console.log(`已经获取到抢购链接: ${seckillUrl}`);
           this.reserveUrl = seckillUrl;
           try {
-            this.request(seckillUrl, {
+            await this.request(seckillUrl, {
               method: 'GET',
               headers: {
                 'User-Agent': this.userAgent,
@@ -299,7 +298,9 @@ class Tools {
                 Referer: `https://item.jd.com/${skuId}.html`
               }
             });
-          } catch (e) {}
+          } catch (e) {
+            console.log('request seckillUrl err')
+          }
 
           return seckillUrl;
         }
@@ -401,7 +402,7 @@ class Tools {
         this.initInfo = data;
         return data;
       } catch (e) {
-        console.error(e);
+        console.error(e, 'get initInfo err');
       }
       await new Promise(r => setTimeout(r, 500));
     }
@@ -430,8 +431,8 @@ class Tools {
     const data = this.initInfo;
 
     if (!data) {
-      console.log('initInfo', data);
-      // return;
+      console.log('null initInfo', data);
+      return;
     }
     let result = null;
     // while (retry--) {
