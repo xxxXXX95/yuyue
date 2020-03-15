@@ -1,5 +1,6 @@
 const toolsClass = require('./tools');
 const helper = new toolsClass();
+const timer = require('./timer');
 
 // 登录
 async function login(directly = false) {
@@ -48,38 +49,41 @@ async function makeReserve(skuId, time = {}) {
 }
 
 // 抢购
-async function buyMaskProgress(skuId, concurrency = 100) {
+async function buyMaskProgress(date, skuId, concurrency = 30) {
   if (!skuId) {
     console.error('skuId 缺少');
     return;
   }
 
   await login();
-  // 可以先获取 orderData
-  console.log('开始job', new Date().toLocaleString());
-  const res = await helper.requestItemPage(skuId);
-  await helper.getOrderData(skuId);
-
-  if (!res) {
-    console.log('没有抢购链接, 抢购失败未开始可能');
-    return;
-  }
-  for (let i = 0; i <= concurrency; i++) {
-    helper.submitOrder(skuId).then(async r => {
-      console.log(r);
-      if (r.success) {
-        await helper.sendToWechat(r);
-        process.exit();
-      }
-      if (i === concurrency) {
-        await helper.sendToWechat('抢购失败');
-        process.exit();
-      }
-    });
-    await new Promise(r => setTimeout(r, 1500));
-  }
+  timer(date, async function() {
+    console.log('执行获取链接时间:', new Date().toLocaleString());
+    const res = await helper.requestItemPage(skuId);
+    if (!res) {
+      console.log('没有抢购链接, 抢购失败未开始可能');
+      return;
+    }
+    console.log('getOrderData:', new Date().toLocaleString());
+    await helper.getOrderData(skuId);
+    for (let i = 0; i <= concurrency; i++) {
+      console.log(i, '抢购:', new Date().toLocaleString());
+      helper.submitOrder(skuId).then(async r => {
+        console.log(r);
+        if (r.success) {
+          await helper.sendToWechat(r);
+          process.exit();
+        }
+        if (i === concurrency) {
+          await helper.sendToWechat('抢购失败');
+          process.exit();
+        }
+      });
+      await new Promise(r => setTimeout(r, 50));
+    }
+  });
 }
 
 exports.buyMaskProgress = buyMaskProgress;
 exports.login = login;
 exports.makeReserve = makeReserve;
+exports.helper = helper;
