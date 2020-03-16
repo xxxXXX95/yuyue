@@ -23,6 +23,8 @@ const config = {
   eid:'',  // string, 必填
   fp: ''  // string, 必填
 };
+
+module.exports = config
 ```
 
 2 需要有node开发环境开发使用 nodejs v12.x, 没有nodejs 官网 下载一个就行. 下载完安装完 node -v 查看版本. 自带包管理器 `npm`
