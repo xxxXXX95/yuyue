@@ -19,7 +19,7 @@ const config = {
 	// key值在 http://sc.ftqq.com/3.version 查看申请使用的方法, 把key粘贴至这里, 关注网站中公众号即可
 	sckey: '', // string, 跟 messenger 有则为必填, 不填写不影响抢购流程
 	
-	// 必填, jd登录 pc 端, 随便提交一个订单,利用谷歌浏览器devtools, 选择 `network`, 查看 submitOrder (注意要勾选 preserve log, 提交订单跳转后看不到该接口了) 接口, 把里面 `eid`, 和 `fp` 俩个字段分别粘贴过来
+	// 必填, jd登录 pc 端, 随便提交一个订单,利用谷歌浏览器devtools, 选择 `network`, 查看 submitOrder (注意要勾选 preserve log, 否则提交订单跳转后看不到该接口了) 接口, 把里面 `eid`, 和 `fp` 俩个字段分别粘贴过来
   eid:'',  // string, 必填
   fp: ''  // string, 必填
 };
