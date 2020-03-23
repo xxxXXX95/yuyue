@@ -81,3 +81,12 @@ const pool = [
 * 订单<img src="https://user-images.githubusercontent.com/13815865/77068877-56728700-6a22-11ea-8102-925cc25a4b92.png" />
 
 更多案例: [issues/2](https://github.com/meooxx/jd_by_mask/issues/2)
+
+## Advanced
+熟悉 `nodejs` 和 `golang` 使用。正常 `master` 版本已经满足实际使用了， 这部分使用说明不会很详细
+分支 `feture-golang` 新加了 `golang` 的版本。 跟 `master` 分支上的区别:
+`master` 上面全部是 `nodejs`代码，实际使用发现在定时功能和`cookie` 在会话间储存不是很高效。正好略懂 `golang`, 就用 `golang` 把提交订单的部分重写了。
+这个分支上面的流程, `nodejs` 负责登录状态维护, 包括登录流程 和 初始 `cookie` 储存。 `golang` 只做定时提交订单这部分流程。下面这段时间，测测实际效果。
+完整流程 nodejs 启动, 监听本地 8888 端口在后台。 golang 启动, func init 中访问nodejs http://127.0.0.1:8888/getCookies, 获得一系列cookie等。然后等待预约时间, 提交订单
+
+![流程图片](https://github.com/meooxx/jd_by_mask/blob/master/diagram.svg)
