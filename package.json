@@ -11,7 +11,7 @@
   "dependencies": {
     "jimp": "^0.9.3",
     "jsqr": "^1.2.0",
-    "node-fetch": "^2.6.0",
+    "node-fetch": "^2.6.1",
     "qrcode-terminal": "^0.12.0",
     "tough-cookie": "^3.0.1"
   }
