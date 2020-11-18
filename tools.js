@@ -401,6 +401,7 @@ class Tools {
           provinceName: defaultAddress.provinceName,
           cityName: defaultAddress.cityName,
           countyName: defaultAddress.countyName,
+          townName: defaultAddress.townName
         };
         this.initInfo = data;
         return data;
