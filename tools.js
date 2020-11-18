@@ -397,7 +397,10 @@ class Tools {
           eid: this.config.eid,
           fp: this.config.fp,
           token: token,
-          pru: ''
+          pru: '',
+          provinceName: defaultAddress.provinceName,
+          cityName: defaultAddress.cityName,
+          countyName: defaultAddress.countyName,
         };
         this.initInfo = data;
         return data;
