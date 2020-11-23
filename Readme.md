@@ -9,19 +9,26 @@
 
 ## Quick Start
 
-1 **`必须配置config文件` **, 在目录下新创建 `config.js` 文件。格式如下（可以直接复制过去填充内容）
+1 **`必须配置config文件`**, 在目录下新创建 `config.js` 文件。格式如下（可以直接复制过去填充内容）
 
 ```js
 // 最简单只加 eid 和 fp
 const config = {
+	// 支持自定义 UA
+  	userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.198 Safari/537.36',
 	// 是否微信公众号推送抢购结果, 非必填
 	messenger: true, // true, false 
 	// key值在 http://sc.ftqq.com/3.version 查看申请使用的方法, 把key粘贴至这里, 关注网站中公众号即可
-	sckey: '', // string, 跟 messenger 有则为必填, 不填写不影响抢购流程
+	sckey: '', // string, messenger 有则为必填, 不填写不影响抢购流程
 	
-	// 必填, jd登录 pc 端, 随便提交一个订单,利用谷歌浏览器devtools, 选择 `network`, 查看 submitOrder (注意要勾选 preserve log, 否则提交订单跳转后看不到该接口了) 接口, 把里面 `eid`, 和 `fp` 俩个字段分别粘贴过来
-  eid:'',  // string, 必填
-  fp: ''  // string, 必填
+  	// 必填, 
+  	// 方式1: jd登录 pc 端, 随便提交一个订单,利用谷歌浏览器devtools, 选择 `network`, 
+  	// 查看 submitOrder (注意要勾选 preserve log, 否则提交订单跳转后看不到该接口了) 接
+  	// 口, 把接口提交的数据里面的 `eid`, 和 `fp` 俩个字段分别粘贴过来
+  	// 方式2: 或者电脑打开jd登陆页面, devtools, 选择 `Elements`, 搜索 eid 和 sessionId(即fp), 在搜索到的input元素上面
+  	// value 属性中的值复制过来
+  	eid: '',  // string, 必填
+  	fp: ''  // string, 必填
 };
 
 module.exports = config

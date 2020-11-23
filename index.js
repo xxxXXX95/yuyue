@@ -25,9 +25,9 @@ const { buyMaskProgress, makeReserve, login, setupServer } = require('./jobs');
 // (2020, 2, 4, 10, 0, 0, 400)
 // 修改使用的时间
 
-// 2020/3/3 10:00:00.400
+// 2020/3/12 9:59:57.250
 const dd1 = new Date(2020, 2, 12, 9, 59, 57, 250).getTime();
-// 2020/3/3 20:00:00.400
+// 2020/3/12 19:59:58.250
 const dd2 = new Date(2020, 2, 12, 19, 59, 58, 250).getTime();
 // 2020/3/3 21:00:00.400
 const dd3 = new Date(2020, 2, 3, 21, 0, 0, 400).getTime();

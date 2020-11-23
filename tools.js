@@ -14,7 +14,7 @@ class Tools {
   constructor() {
     this.isLogin = false;
     this.userAgent =
-      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.116 Safari/537.36';
+      config.userAgent || 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.116 Safari/537.36';
     this.headers = {
       'user-agent': this.userAgent
     };
