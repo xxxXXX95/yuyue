@@ -14,9 +14,10 @@ class Tools {
   constructor() {
     this.isLogin = false;
     this.userAgent =
-      config.userAgent || 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.116 Safari/537.36';
+      config.userAgent ||
+      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.116 Safari/537.36';
     this.headers = {
-      'user-agent': this.userAgent
+      'user-agent': this.userAgent,
     };
     this.reqTools = new Request();
     this.request = this.reqTools.request;
@@ -24,7 +25,6 @@ class Tools {
     this.config = config;
     this.initInfo = null;
     this.reserveUrl = 'url';
-    this.hasGetCode = false;
 
     // this.getLocalCookie();
     // const cookie = fs.readFile()
@@ -40,7 +40,7 @@ class Tools {
   };
 
   /**获取本地cookie，检查cookie有效期, 返回登录状态 */
-  getLocalCookie = async () => {
+  getLocalCookie = async (noValidating = false) => {
     const pathname = path.resolve(__dirname, 'cookie.json');
     const readFile = util.promisify(fs.readFile);
     try {
@@ -53,6 +53,14 @@ class Tools {
         cookieJson,
         this.reqTools.cookiejar.store,
         async (err, cookie) => {
+          // 不需要验证cookie有效性
+          // 确定刚刚登陆, 就不需要验证
+          if (noValidating) {
+            this.isLogin = true;
+            resolve(this.isLogin);
+            return;
+          }
+          console.log('here');
           if (await this.validateCookies()) {
             this.isLogin = true;
             // return true
@@ -72,11 +80,11 @@ class Tools {
   validateCookies = async () => {
     const url = 'https://order.jd.com/center/list.action';
     const payload = {
-      rid: Date.now()
+      rid: Date.now(),
     };
     try {
       const resp = await this.request(url + `?${qs.stringify(payload)}`, {
-        redirect: 'manual'
+        redirect: 'manual',
       });
       // console.log(resp)
       // if(res.status == '301' || res.statu)
@@ -98,7 +106,7 @@ class Tools {
       url,
       {
         method: 'GET',
-        headers: this.headers
+        headers: this.headers,
       }
       // (headers = self.headers)
     );
@@ -113,12 +121,6 @@ class Tools {
     });
   }
   async getQRCode() {
-    // 多进程共享等一个登录状态
-    if (this.hasGetCode) {
-      // qrcodeTerminal.generate(this.qrUrl, { small: true });
-      return;
-    }
-    this.hasGetCode = true
     /**
      *
      */
@@ -129,18 +131,18 @@ class Tools {
     const params = {
       appid: 133,
       size: 147,
-      t: ''
+      t: '',
     };
     const headers = {
       'User-Agent': this.userAgent,
-      Referer: 'https://passport.jd.com/new/login.aspx'
+      Referer: 'https://passport.jd.com/new/login.aspx',
     };
     const qsStr = `?${qs.stringify(params)}`;
     const res = await this.request(url + qsStr, {
       method: 'GET',
       headers: {
-        ...headers
-      }
+        ...headers,
+      },
     });
 
     const bffArray = await res.arrayBuffer();
@@ -182,17 +184,17 @@ class Tools {
       appid: '133',
       callback: `jQuery${randomInt}`, // 'jQuery{}'.format(random.randint(1000000, 9999999)),
       token: token, // self.sess.cookies.get('wlfstk_smdl'),
-      _: Date.now()
+      _: Date.now(),
     };
 
     const headers = {
       'User-Agent': this.user_agent,
-      Referer: 'https://passport.jd.com/new/login.aspx'
+      Referer: 'https://passport.jd.com/new/login.aspx',
     };
 
     // console.log()
     const res = await this.request(url + `?${qs.stringify(params)}`, {
-      headers
+      headers,
     });
 
     const text = await res.text();
@@ -205,11 +207,11 @@ class Tools {
     const url = 'https://passport.jd.com/uc/qrCodeTicketValidation';
     const headers = {
       'User-Agent': this.user_agent,
-      Referer: 'https://passport.jd.com/uc/login?ltype=logout'
+      Referer: 'https://passport.jd.com/uc/login?ltype=logout',
     };
     const str = `?t=${ticket}`;
     const res = await this.request(url + str, {
-      headers
+      headers,
     });
     // console.log(res.headers.raw(), 'valid')
     return res.json();
@@ -227,15 +229,15 @@ class Tools {
     const url = 'https://yushou.jd.com/youshouinfo.action';
     const payload = {
       callback: 'fetchJSON',
-      sku: sku_id
+      sku: sku_id,
     };
     const headers = {
       'User-Agent': this.user_agent,
-      Referer: `https://item.jd.com/${sku_id}.html`
+      Referer: `https://item.jd.com/${sku_id}.html`,
     };
     try {
       const res = await this.request(url + `?${qs.stringify(payload)}`, {
-        headers
+        headers,
       });
       const text = await res.text();
       const r = this.parseJsonp(text);
@@ -263,12 +265,12 @@ class Tools {
       callback: `jQuery${this.getRandomNumber()}`,
       skuId: skuId,
       from: 'pc',
-      _: Date.now()
+      _: Date.now(),
     };
     const headers = {
       'User-Agent': this.userAgent,
       Host: 'itemko.jd.com',
-      Referer: `https://item.jd.com/${skuId}.html`
+      Referer: `https://item.jd.com/${skuId}.html`,
     };
 
     // 10s 内获取不到链接基本凉凉
@@ -276,7 +278,7 @@ class Tools {
     while (reTry--) {
       try {
         const res = await this.request(url + `?${qs.stringify(payload)}`, {
-          headers
+          headers,
         });
         // console.log(`正在请求:${url}`)
         const result = this.parseJsonp(await res.text());
@@ -295,11 +297,11 @@ class Tools {
               headers: {
                 'User-Agent': this.userAgent,
                 Host: 'marathon.jd.com',
-                Referer: `https://item.jd.com/${skuId}.html`
-              }
+                Referer: `https://item.jd.com/${skuId}.html`,
+              },
             });
           } catch (e) {
-            console.log('request seckillUrl err')
+            console.log('request seckillUrl err');
           }
 
           return seckillUrl;
@@ -319,15 +321,15 @@ class Tools {
     const payload = {
       skuId: skuId,
       num: 1,
-      rid: Math.floor(Date.now() / 1000)
+      rid: Math.floor(Date.now() / 1000),
     };
     const headers = {
       'User-Agent': this.userAgent,
       Host: 'marathon.jd.com',
-      Referer: `https://item.jd.com/${skuId}.html` //.format(self.sku_id)
+      Referer: `https://item.jd.com/${skuId}.html`, //.format(self.sku_id)
     };
     const res = await this.request(url + `?${qs.stringify(payload)}`, {
-      headers
+      headers,
     });
   };
 
@@ -339,16 +341,16 @@ class Tools {
     const data = {
       sku: skuId,
       num: 1,
-      isModifyAddress: 'false'
+      isModifyAddress: 'false',
     };
     const headers = {
       'User-Agent': this.userAgent,
-      Host: 'marathon.jd.com'
+      Host: 'marathon.jd.com',
     };
     const res = await this.request(url, {
       method: 'POST',
       body: qs.stringify(data),
-      headers
+      headers,
     });
     return await res.json();
     // return this.parseJsonp(await res.text());
@@ -401,7 +403,7 @@ class Tools {
           provinceName: defaultAddress.provinceName,
           cityName: defaultAddress.cityName,
           countyName: defaultAddress.countyName,
-          townName: defaultAddress.townName
+          townName: defaultAddress.townName,
         };
         this.initInfo = data;
         return data;
@@ -417,7 +419,7 @@ class Tools {
     const url =
       'https://marathon.jd.com/seckillnew/orderService/pc/submitOrder.action';
     const payload = {
-      skuId: skuId
+      skuId: skuId,
     };
 
     // self.seckill_order_data[self.sku_id] = self._get_seckill_order_data();
@@ -425,7 +427,7 @@ class Tools {
     const headers = {
       'User-Agent': this.userAgent,
       Host: 'marathon.jd.com',
-      Referer: `https://marathon.jd.com/seckill/seckill.action?skuId=${skuId}&num=1&rid=${new Date().getSeconds()}` //.format(
+      Referer: `https://marathon.jd.com/seckill/seckill.action?skuId=${skuId}&num=1&rid=${new Date().getSeconds()}`, //.format(
     };
 
     // getOrderData 重试 getInitInfo
@@ -446,7 +448,7 @@ class Tools {
         {
           method: 'POST',
           body: qs.stringify(data),
-          headers
+          headers,
         },
         true
       );
@@ -476,7 +478,7 @@ class Tools {
     const url = `http://sc.ftqq.com/${this.config.sckey}.send`;
     const payload = {
       text: '抢购结果',
-      desp: message
+      desp: message,
     };
     return this.request(url + `?${qs.stringify(payload)}`);
   };

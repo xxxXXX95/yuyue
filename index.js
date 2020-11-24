@@ -3,7 +3,6 @@ const path = require('path');
 const filePath = path.join(__dirname, 'config.js');
 const fs = require('fs');
 
-
 try {
   fs.accessSync(filePath, fs.constants.F_OK);
   const config = require('./config');
@@ -17,14 +16,13 @@ try {
   process.exit();
 }
 
-const { buyMaskProgress, makeReserve, login, setupServer } = require('./jobs');
+const { buyMaskProgress, login } = require('./jobs');
 
 // 年     月    日     时    分   秒     毫秒
 // 2020, 0-11, 1-31, 0-24, 0-60  0-60  0-1000
 // 例如 2020-3-4 10:00:00.400
 // (2020, 2, 4, 10, 0, 0, 400)
 // 修改使用的时间
-
 // 2020/3/12 9:59:57.250
 const dd1 = new Date(2020, 2, 12, 9, 59, 57, 250).getTime();
 // 2020/3/12 19:59:58.250
@@ -41,14 +39,38 @@ const pool = [
 ];
 
 if (cluster.isWorker) {
-  console.log('progress work', process.pid);
-  const item = pool.shift();
-  buyMaskProgress(item.date, item.skuId);
+  cluster.worker.once('message', (item) => {
+    if (item.type === 'loginWork') {
+      console.log('progress worker login', process.pid);
+      login(item.forceLogin).then(() => {
+        // 登陆完成后通知主进程
+        // 派生任务进程
+        cluster.worker.send('loginReady');
+      });
+    } else {
+      // 任务进程
+      console.log(
+        'progress worker login',
+        process.pid,
+        '时间:',
+        item.date,
+        'sku',
+        item.skuId
+      );
+      buyMaskProgress(item.date, item.skuId);
+    }
+  });
 } else {
-  for (i = 0; i < pool.length; i++) {
-    cluster.fork();
-  }
-  // 强制扫描登录重置24h
-  // login(true)
+  // 使用独立进程登陆
+  // forcelogin, 强制登陆一次
+  cluster.fork().send({ type: 'loginWork', forceLogin: false });
+  cluster.on('message', () => {
+    // 登陆完成后
+    for (i = 0; i < pool.length; i++) {
+      const item = pool[i];
+      cluster.fork().send(item);
+    }
+  });
+
   console.log('main progress');
 }

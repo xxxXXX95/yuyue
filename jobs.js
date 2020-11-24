@@ -43,20 +43,15 @@ async function login(directly = false) {
   // console.log(res.headers.raw())
 }
 
-async function makeReserve(skuId, time = {}) {
-  await login();
-  await helper.getReserveUrl(skuId);
-}
-
 // 抢购
-async function buyMaskProgress(date, skuId, concurrency = 30) {
+async function buyMaskProgress(date, skuId, concurrency = 1) {
   if (!skuId) {
     console.error('skuId 缺少');
     return;
   }
-
-  await login();
-  timer(date, async function() {
+  // 当前进程读取本地 Cookie, 但不需要验证cookie, true
+  await helper.getLocalCookie(true);
+  timer(date, async function () {
     console.log('执行获取链接时间:', new Date().toLocaleString());
     const res = await helper.requestItemPage(skuId);
     if (!res) {
@@ -85,5 +80,4 @@ async function buyMaskProgress(date, skuId, concurrency = 30) {
 
 exports.buyMaskProgress = buyMaskProgress;
 exports.login = login;
-exports.makeReserve = makeReserve;
 exports.helper = helper;
