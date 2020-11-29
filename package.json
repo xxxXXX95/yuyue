@@ -9,6 +9,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "iconv-lite": "^0.6.2",
     "jimp": "^0.9.3",
     "jsqr": "^1.2.0",
     "node-fetch": "^2.6.0",

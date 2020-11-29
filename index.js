@@ -16,32 +16,22 @@ try {
   process.exit();
 }
 
-const { buyMaskProgress, login } = require('./jobs');
-
-// 年     月    日     时    分   秒     毫秒
-// 2020, 0-11, 1-31, 0-24, 0-60  0-60  0-1000
-// 例如 2020-3-4 10:00:00.400
-// (2020, 2, 4, 10, 0, 0, 400)
-// 修改使用的时间
-// 2020/3/12 9:59:57.250
-const dd1 = new Date(2020, 2, 12, 9, 59, 57, 250).getTime();
-// 2020/3/12 19:59:58.250
-const dd2 = new Date(2020, 2, 12, 19, 59, 58, 250).getTime();
-// 2020/3/3 21:00:00.400
-const dd3 = new Date(2020, 2, 3, 21, 0, 0, 400).getTime();
-
-// 修改这里, 添加skuId, 和抢购时间 date, 需要更改 月/日 时:分:秒:毫秒
-const pool = [
-  // { skuId: '100011521400', date: dd1 },
-  { skuId: '100011551632', date: dd2 },
-  { skuId: '100006394713', date: dd2 }
-  // { skuId: '100011621642', date: dd2 }
-];
+const {
+  buyMaskProgress,
+  login,
+  submitOrderFromShoppingCart,
+} = require('./jobs');
+const { pool, forceLogin } = require('./tasks-pool');
 
 if (cluster.isWorker) {
-  cluster.worker.once('message', (item) => {
+  cluster.worker.once('message', item => {
     if (item.type === 'loginWork') {
       console.log('progress worker login', process.pid);
+      if (item.forceLogin) {
+        console.warn(
+          '已开启强制扫码登录, 如果接下里24小时内频繁重启, 重启最好关闭了'
+        );
+      }
       login(item.forceLogin).then(() => {
         // 登陆完成后通知主进程
         // 派生任务进程
@@ -57,13 +47,16 @@ if (cluster.isWorker) {
         'sku',
         item.skuId
       );
-      buyMaskProgress(item.date, item.skuId);
+      if (item.areaId) {
+        console.log('此流程对应添加到购物车抢购');
+        submitOrderFromShoppingCart(item.date, item.skuId, item.areaId);
+      } else buyMaskProgress(item.date, item.skuId);
     }
   });
 } else {
   // 使用独立进程登陆
   // forcelogin, 强制登陆一次
-  cluster.fork().send({ type: 'loginWork', forceLogin: false });
+  cluster.fork().send({ type: 'loginWork', forceLogin });
   cluster.on('message', () => {
     // 登陆完成后
     for (i = 0; i < pool.length; i++) {

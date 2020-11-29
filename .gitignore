@@ -3,3 +3,4 @@ cookie.json
 node_modules
 config.js
 *.log
+qrcode.png

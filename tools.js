@@ -9,6 +9,7 @@ const path = require('path');
 const util = require('util');
 // const cookie = require('cookie.json')
 const config = require('./config');
+const iconv = require('iconv-lite');
 
 class Tools {
   constructor() {
@@ -147,7 +148,12 @@ class Tools {
 
     const bffArray = await res.arrayBuffer();
     const bff = Buffer.from(bffArray);
-
+    const localQRPath = path.join(__dirname, 'qrcode.png');
+    fs.writeFileSync(localQRPath, bff);
+    console.log(
+      '如果你是windows系统终端二维码现实有问题,',
+      '请打开本地目录新生成到qrcode.png 扫码'
+    );
     const qrUrl = await this.decodeQRCode(bff).catch(e => {
       console.log(e);
     });
@@ -218,7 +224,8 @@ class Tools {
   }
   saveJson = async () => {
     const json = this.reqTools.cookiejar.toJSON();
-    fs.writeFileSync('./cookie.json', JSON.stringify(json));
+    const cookiePath = path.join(__dirname, 'cookie.json');
+    fs.writeFileSync(cookiePath, JSON.stringify(json));
   };
   getRandomNumber = (max = 9999999, min = 1000000) => {
     return Math.floor(Math.random() * (9999999 - 1000000 + 1) + 1000000);
@@ -315,7 +322,8 @@ class Tools {
     return '';
   };
 
-  requestCheckoutPage = async skuId => {
+  // 预约直接抢购订单页面
+  requestSeckillCheckoutPage = async skuId => {
     console.info('访问抢购订单结算页面...');
     const url = 'https://marathon.jd.com/seckill/seckill.action';
     const payload = {
@@ -475,12 +483,154 @@ class Tools {
   };
   sendToWechat = message => {
     if (!message) return;
+    if (!config.messenger) return;
     const url = `http://sc.ftqq.com/${this.config.sckey}.send`;
     const payload = {
       text: '抢购结果',
       desp: message,
     };
     return this.request(url + `?${qs.stringify(payload)}`);
+  };
+
+  // 访问sku 详情页面
+  requestItemDetailPage = skuId => {
+    const url = `https://item.jd.com/${skuId}.html`;
+    return this.request(url, {
+      'User-Agent': this.userAgent,
+    });
+  };
+  // 获取库存
+  getItemStock = async (skuId, area) => {
+    const payload = {
+      callback: `jQuery${this.getRandomNumber()}`,
+      type: 'getstocks',
+      skuIds: String(skuId),
+      area: area,
+      _: Date.now(),
+    };
+    const headers = {
+      'User-Agent': this.userAgent,
+      Referer: `https://item.jd.com/${skuId}.html`,
+    };
+    const res = await this.request(
+      'https://c0.3.cn/stocks?' + qs.stringify(payload),
+      {
+        headers,
+      }
+    );
+    const gbkText = await res.buffer();
+    const text = iconv.decode(gbkText, 'gbk');
+
+    return this.parseJsonp(text);
+  };
+  // 获取是否开启购买
+  getWareInfo = async params => {
+    const url = `https://item-soa.jd.com/getWareBusiness`;
+    const headers = {
+      'User-Agent': this.userAgent,
+    };
+    const payload = {
+      callback: `jQuery${this.getRandomNumber()}`,
+      ...params,
+      // skuId,
+      // cat,
+      // area,
+      // shopId,
+      // venderId,
+      // paramJson,
+      // num,
+    };
+    const res = await this.request(url + `?${qs.stringify(payload)}`, {
+      headers,
+    });
+    const text = await res.text();
+    return this.parseJsonp(text);
+  };
+  // 添加到购物车
+  addItemToCart = async skuId => {
+    const url = `https://cart.jd.com/gate.action`;
+    const payload = {
+      pid: skuId,
+      pcount: 1,
+      ptype: 1,
+    };
+    const headers = {
+      'User-Agent': this.userAgent,
+    };
+    const res = await this.request(url + `?${qs.stringify(payload)}`, {
+      headers,
+    });
+    if (res.url.indexOf('https://cart.jd.com/addToCart.html') !== -1) {
+      const text = await res.text();
+      // const text.match()
+      const isSuccess = text.match(/(class="ftx-02")/i)[1];
+      return {
+        pageUrl: `https://cart.jd.com/addToCart.html`,
+        msg: isSuccess ? '已经成功添加购物车' : '添加购物车失败',
+      };
+    }
+    if (
+      res.url.indexOf(`https://cart.jd.com/cart_asyc_index_utf8.html`) !== -1
+    ) {
+      return {
+        pageUrl: `https://cart.jd.com/cart_asyc_index_utf8.html`,
+        isCartPage: true,
+        msg: '当前是套装商品, 直接跳转至购物车了',
+      };
+    }
+  };
+  // 访问购物车详情页面
+  requestCartPage = async skuId => {
+    const url = `https://cart.jd.com/cart.action?r=${Math.random()}`;
+    const headers = {
+      'User-Agent': this.userAgent,
+      Referer: `https://cart.jd.com/addToCart.html?rcd=1&pid=${skuId}&pc=1&eb=1&rid=${Date.now()}&em=`,
+    };
+    return this.request(url, { headers });
+  };
+
+  // 从购物车结算的页面
+  requestCheckoutPage = async () => {
+    const url = 'https://trade.jd.com/shopping/order/getOrderInfo.action';
+    try {
+      const res = await this.request(url, {
+        headers: {
+          'User-Agent': this.userAgent,
+          Referer: 'https://cart.jd.com/',
+        },
+      });
+
+      return res;
+    } catch (e) {
+      console.log('购物车结算页面失败', e);
+      return undefined;
+    }
+  };
+  // 提交购物车选中订单
+  submitCartOrder = async () => {
+    const url = 'https://trade.jd.com/shopping/order/submitOrder.action';
+    const headers = {
+      Referer: 'https://trade.jd.com/shopping/order/getOrderInfo.action',
+      'User-Agent': this.userAgent,
+    };
+    const payload = {
+      overseaPurchaseCookies: '',
+      vendorRemarks: '[]',
+      'submitOrderParam.sopNotPutInvoice': 'false',
+      'submitOrderParam.trackID': 'TestTrackId',
+      'submitOrderParam.ignorePriceChange': '0',
+      'submitOrderParam.btSupport': '0',
+      'submitOrderParam.jxj': 1,
+      'submitOrderParam.eid': config.eid,
+      'submitOrderParam.fp': config.fp,
+    };
+    const res = await this.request(url, {
+      headers,
+      body: qs.stringify(payload),
+      method: 'POST',
+    });
+    const result = res.json();
+    return result;
   };
 }
 

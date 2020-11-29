@@ -77,7 +77,109 @@ async function buyMaskProgress(date, skuId, concurrency = 1) {
     }
   });
 }
+// 提交订单, 此流程对应从购物车提交订单流程
+async function submitOrderFromShoppingCart(date, skuId, areaId) {
+  if (!areaId) {
+    console.log('no areaId!请确认填写了正确到areaId');
+    process.exit(0);
+  }
+  await helper.getLocalCookie(true);
+  // 补足 2_xxx_xxx -> 2_xxx_xxx_0
+  const area = areaId.split('_').length === 3 ? `${areaId}_0` : area;
+  // 访问详情页 item.xxx.com/skuId.html
+  const res = await helper.requestItemDetailPage(skuId);
+  const text = await res.text();
+  // skuId,
+  // cat,
+  // area,
+  // shopId,
+  // venderId,
+  // paramJson,
+  // num,
+  const cat = JSON.parse(text.match(/cat:(.*?]),/i)[1]);
+  const venderId = JSON.parse(text.match(/venderId:(.*?),/i)[1]);
+  const shopId = text.match(/shopId:'(.*?)',/i)[1];
+  const paramJson = text.match(/paramJson:\s*'(.*?)'/i)[1];
+
+  const stock = await helper.getItemStock(skuId, area);
+  const item = stock[skuId];
+  // IsPurchase: 是否可以购买, false 可以购买, true 不可以
+  // StockState:
+  //  33 现货,
+  //  40 可配货
+  //  0,34 无货
+  //  36 采购中
+  //skuState # 商品是否上架
+  const { /*IsPurchase,*/ StockState, StockStateName, skuState } = item;
+  console.log('库存状态:', StockStateName);
+  if ([0, 34, 36].includes(StockState)) {
+    console.log(`狗东耍猴呢!溜了~`);
+    process.exit();
+  }
+
+  timer(date, async () => {
+    let i = 10;
+    let isAvalibal = false;
+    // let interval = 200;
+    // 10 * 200 ms 内检查状态
+    while (i--) {
+      try {
+        const yuyue = await helper.getWareInfo({
+          skuId,
+          cat: cat.join(),
+          area,
+          shopId,
+          venderId,
+          paramJson,
+          num: 1,
+        });
+        // type === 4 此时可以添加购物车抢购
+        if (yuyue.yuyueInfo.type == '4') {
+          console.log('准备提交购物车');
+          isAvalibal = true;
+          break;
+        } else {
+          // 还剩多少时间
+          console.log(yuyue.yuyueInfo.cdPrefix, yuyue.yuyueInfo.countdown);
+        }
+      } catch (e) {
+        console.log('查询预约信息失败:', i, e);
+      }
+      await new Promise(r => setTimeout(r, 200));
+    }
+
+    // 有货哦
+    if (isAvalibal) {
+      const result = await helper.addItemToCart(skuId);
+      // 已经跳转至购物车页面
+      // 当前sku 是套装商品
+      console.log('添加成功,', result);
+      if (!result.isCartPage) {
+        await helper.requestCartPage(skuId);
+        console.log('访问购物车页面成功');
+        await helper.requestCheckoutPage();
+        console.log('访问购物车结算页面成功');
+        let i = 10;
+        while (i--) {
+          try {
+            const res = await helper.submitCartOrder();
+            if (res.success) {
+              const text = `订单提交成功!订单号:${res.order_id}`;
+              console.log(text);
+              helper.sendToWechat(text);
+              process.exit();
+            }
+          } catch (e) {
+            console.log('抢购失败:', i, e);
+          }
+          await new Promise(r => setTimeout(r, 200));
+        }
+      }
+    }
+  });
+}
 
 exports.buyMaskProgress = buyMaskProgress;
 exports.login = login;
 exports.helper = helper;
+exports.submitOrderFromShoppingCart = submitOrderFromShoppingCart;
