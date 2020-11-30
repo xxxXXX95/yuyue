@@ -60,7 +60,7 @@ const dd3 = new Date(2020, 2, 3, 21, 0, 0, 400).getTime();
 
 // 修改这里, 添加skuId, 和抢购时间 date, 需要更改 月/日 时:分:秒:毫秒
 // skuId 获取方法， 打开任意一个商品详情页如 `https://item.jd.com/100011521400.html`, 则 `100011521400` 就是其skuId
-export const pool = [
+exports.pool = [
   // { skuId: '100011521400', date: dd1 },
   { skuId: '100011551632', date: dd2 },
   { skuId: '100006394713', date: dd2 },
@@ -73,7 +73,7 @@ export const pool = [
 // 定时抢购时 cookie 过期了就尴尬了
 // true 强制扫码不实用cookie, 登录过后频繁重启时记得关闭
 // 否则一直要扫码
-export const forceLogin = false;
+exports.forceLogin = false;
 ```
 
 5 确定流程是 *预约-购物车-订单详情* 这种,否则忽略这步骤.还要配置地区 `areaId`. 请打开项目目录下 `area/你所在省份`,找到你所在地区 id 复制配置到 `tasks-pool.js` 中。 如 `area/2.上海.txt`, `'崇明县/东平镇:'2_2919_50783',` 对应 `'2_2919_50783'`, 按照上面示范填入`tasks-pool.js`文件中  
@@ -83,7 +83,7 @@ export const forceLogin = false;
 7 扫描终端中的二维码登录, 24 小时之内重启不需要再次登录, `cookie` 串会保留在本地文件中 `cookie.json` 中。过期的话必须重新扫码
 
 ## Todo
-- [ ] 针对从购物车提交订单流程。如果此商品已经在购物车中, 则直接抢购不需要执行添加购物车操作了  
+- [x] 针对从购物车提交订单流程。如果此商品已经在购物车中, 则直接抢购不需要执行添加购物车操作了  
 
 
 
@@ -123,3 +123,4 @@ _解决不了 mac 待机状态, 代码不执行问题后执行很延后_
 完整流程 nodejs 启动, 监听本地 8888 端口在后台。 golang 启动, func init 中访问 nodejs http://127.0.0.1:8888/getCookies, 获得一系列 cookie 等。然后等待预约时间, 提交订单
 
 ![流程图片](https://github.com/meooxx/jd_by_mask/blob/master/diagram.svg)
+
