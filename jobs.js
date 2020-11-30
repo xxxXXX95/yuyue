@@ -170,7 +170,6 @@ async function submitOrderFromShoppingCart(date, skuId, areaId) {
       }
       await new Promise(r => setTimeout(r, 200));
     }
-
     if (!isAvailable) {
       console.log('哈哈又被耍猴了!');
       process.exit();
@@ -195,7 +194,7 @@ async function submitOrderFromShoppingCart(date, skuId, areaId) {
       try {
         const res = await helper.submitCartOrder();
         if (res.success) {
-          const text = `订单提交成功!订单号:${res.order_id}`;
+          const text = `订单提交成功!订单号:${res.orderId}`;
           console.log(text);
           helper.sendToWechat(text);
           process.exit();
