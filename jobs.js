@@ -82,13 +82,17 @@ async function buyMaskProgress(date, skuId, concurrency = 1) {
  * @param {*} skuId
  * 当前sku 是否在购物车中
  */
-async function isSkuInCart(skuId) {
-  // 访问购物车
-  const res = await helper.requestCartPage(skuId);
-  const text = await res.text();
-
-  const isSkuInIt = RegExp(`id="product_${skuId}"`, 'i').test(text);
-  return isSkuInIt;
+async function isSkuInCart(skuId, areaId) {
+  // 获取购物车数据
+  const res = await helper.getCartData(areaId);
+  if (res.success) {
+    let allskus = [];
+    res.resultData.cartInfo.vendors.forEach(v => {
+      allskus = allskus.concat(v.sorted);
+    });
+    return !!allskus.find(s => s.item.Id == skuId);
+  }
+  return false;
 }
 
 // 提交订单, 此流程对应从购物车提交订单流程
@@ -130,7 +134,7 @@ async function submitOrderFromShoppingCart(date, skuId, areaId) {
   //   console.log(`狗东耍猴呢!溜了~`);
   //   process.exit();
   // }
-  const isInCart = await isSkuInCart(skuId);
+  const isInCart = await isSkuInCart(skuId, area);
   timer(date, async () => {
     let i = 10;
     let isAvailable = false;
@@ -180,17 +184,19 @@ async function submitOrderFromShoppingCart(date, skuId, areaId) {
       // 已经跳转至购物车页面
       // 当前sku 是套装商品, 已经在购物车页面了
       console.log('添加成功,', result);
-      if (!result.isCartPage) {
-        // 访问购物车
-        await helper.requestCartPage(skuId);
-        console.log('访问购物车页面成功');
-      }
     }
-    try {
-      await helper.requestCheckoutPage();
-      console.log('访问购物车结算页面成功');
-    } catch (e) {
-      console.log('访问订单页面失败', e);
+    i = 10;
+    while (i--) {
+      try {
+        await Promise.race([
+          helper.requestCheckoutPage(),
+          new Promise((_, r) => setTimeout(r, 400, '请求结算超过400ms')),
+        ]);
+        console.log('访问购物车结算页面成功');
+        break;
+      } catch (e) {
+        console.log('访问订单页面失败', e);
+      }
     }
     i = 10;
     while (i--) {
@@ -201,6 +207,8 @@ async function submitOrderFromShoppingCart(date, skuId, areaId) {
           console.log(text);
           helper.sendToWechat(text);
           process.exit();
+        } else {
+          console.log('尝试index', i, '失败原因', res.message || res);
         }
       } catch (e) {
         console.log('抢购失败:', i, e);

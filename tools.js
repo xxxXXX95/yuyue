@@ -632,6 +632,37 @@ class Tools {
     const result = res.json();
     return result;
   };
+
+  // 获取购物车数据接口
+  getCartData = async area => {
+    const origin = 'https://api.m.jd.com';
+    const cookies = await this.reqTools.getCookies(origin);
+    const item = cookies.find(c => c.key === 'user-key') || {};
+    const body = {
+      serInfo: {
+        area,
+        'user-key': item['user-key'] || '',
+      },
+      cartExt: {
+        specialId: 1,
+      },
+    };
+    const payload = {
+      functionId: 'pcCart_jc_getCurrentCart',
+      appid: 'JDC_mall_cart',
+      loginType: 3,
+      body: JSON.stringify(body),
+    };
+    const url = `${origin}/api?${qs.stringify(payload)}`;
+    const res = await this.request(url, {
+      headers: {
+        'User-Agent': this.userAgent,
+        origin: 'https://cart.jd.com',
+        referer: `https://cart.jd.com/`,
+      },
+    });
+    return res.json();
+  };
 }
 
 module.exports = Tools;
