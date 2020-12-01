@@ -78,8 +78,8 @@ async function buyMaskProgress(date, skuId, concurrency = 1) {
   });
 }
 /**
- * 
- * @param {*} skuId 
+ *
+ * @param {*} skuId
  * 当前sku 是否在购物车中
  */
 async function isSkuInCart(skuId) {
@@ -186,9 +186,12 @@ async function submitOrderFromShoppingCart(date, skuId, areaId) {
         console.log('访问购物车页面成功');
       }
     }
-
-    await helper.requestCheckoutPage();
-    console.log('访问购物车结算页面成功');
+    try {
+      await helper.requestCheckoutPage();
+      console.log('访问购物车结算页面成功');
+    } catch (e) {
+      console.log('访问订单页面失败', e);
+    }
     i = 10;
     while (i--) {
       try {
