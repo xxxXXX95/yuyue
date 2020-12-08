@@ -190,7 +190,7 @@ async function submitOrderFromShoppingCart(date, skuId, areaId) {
       try {
         await Promise.race([
           helper.requestCheckoutPage(),
-          new Promise((_, r) => setTimeout(r, 400, '请求结算超过400ms')),
+          new Promise((_, r) => setTimeout(r, 500, '请求结算页面超过500ms')),
         ]);
         console.log('访问购物车结算页面成功');
         break;
@@ -198,14 +198,14 @@ async function submitOrderFromShoppingCart(date, skuId, areaId) {
         console.log('访问订单页面失败', e);
       }
     }
-    i = 10;
+    i = 20;
     while (i--) {
       try {
         const res = await helper.submitCartOrder();
         if (res.success) {
           const text = `订单提交成功!订单号:${res.orderId}`;
           console.log(text);
-          helper.sendToWechat(text);
+          await helper.sendToWechat(text);
           process.exit();
         } else {
           console.log('尝试index', i, '失败原因', res.message || res);
@@ -213,7 +213,7 @@ async function submitOrderFromShoppingCart(date, skuId, areaId) {
       } catch (e) {
         console.log('抢购失败:', i, e);
       }
-      await new Promise(r => setTimeout(r, 200));
+      await new Promise(r => setTimeout(r, 300));
     }
   });
 }

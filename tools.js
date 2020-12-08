@@ -61,7 +61,6 @@ class Tools {
             resolve(this.isLogin);
             return;
           }
-          console.log('here');
           if (await this.validateCookies()) {
             this.isLogin = true;
             // return true
