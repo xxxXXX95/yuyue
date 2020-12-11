@@ -7,7 +7,7 @@
 狗东现有俩种抢购模式
 
 1. 到时间直接抢购(例如口罩)
-2. 到时间先添加购物车->到购物车提交订单(显卡)  
+2. 到时间先添加购物车 -> 到购物车提交订单(显卡)  
 3. _请一定要搞清楚使用哪种模式, 否则抢不到_
 
 ## Quick Start
@@ -22,14 +22,14 @@ const config = {
     'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.198 Safari/537.36',
   // 是否微信公众号推送抢购结果, 非必填
   messenger: true, // true, false
-  // key值在 http://sc.ftqq.com/3.version 查看申请使用的方法, 把key粘贴至这里, 关注网站中公众号即可
-  sckey: '', // string, messenger 有则为必填, 不填写不影响抢购流程
+  // key 值在 http://sc.ftqq.com/3.version, 查看申请使用的方法. 把key粘贴至这里, 微信关注网站中的公众号即可.
+  sckey: '', // string, messenger 是 true 则为必填, 不填写不影响抢购流程
 
   // 必填,
-  // 方式1: jd登录 pc 端, 随便提交一个订单,利用谷歌浏览器devtools, 选择 `network`,
+  // 方式1: jd登录 pc 端, 随便提交一个订单, 利用谷歌浏览器devtools, 选择 `network`,
   // 查看 submitOrder (注意要勾选 preserve log, 否则提交订单跳转后看不到该接口了) 接
-  // 口, 把接口提交的数据里面的 `eid`, 和 `fp` 俩个字段分别粘贴过来
-  // 方式2: 或者电脑打开jd登陆页面, devtools, 选择 `Elements`, 搜索 eid 和 sessionId(即fp), 在搜索到的input元素上面
+  // 口, 把接口提交的数据里面的 `eid`, 和 `fp` 俩个字段值分别粘贴过来
+  // 方式2: 或者电脑打开 jd 登陆页面, devtools, 选择 `Elements`, 搜索 eid 和 sessionId(即fp), 在搜索到的input元素上面
   // value 属性中的值复制过来
   eid: '', // string, 必填
   fp: '', // string, 必填
@@ -38,11 +38,11 @@ const config = {
 module.exports = config;
 ```
 
-2 需要有 node 开发环境开发使用 nodejs v12.x, 没有 nodejs 官网 下载一个就行. 下载完安装完中终端执行 `node -v` 查看版本. 其自带包管理器 `npm`
+2 需要有 `node` 开发环境开发使用 `nodejs` v12.x, 没有 nodejs 官网下载一个就行. 下载安装完后终端执行 `node -v` 查看版本. 其自带包管理器 `npm`
 
-3 在目录下执行 `npm install` 或者 `yarn`(不熟悉, 就使用 npm 一样的) 安装依赖, 已经默认配置使用 `taobao` 镜像地址下载依赖包
+3 在目录下执行 `npm install` 或者 `yarn`(不熟悉的, 就直接使用 npm 效果一样的) 安装依赖, 已经默认配置使用 `taobao` 镜像地址下载依赖包
 
-4 配置`tasks-pool.js`(以前在*index.js* 中, 现在迁移出来了) 中设置日期`date`和要抢购的 `skuId`, 格式如下
+4 配置`tasks-pool.js`(以前在*index.js* 中, 现在迁移出来了) 中设置日期 `date` 和要抢购的 `skuId`, 格式如下
 
 ```js
 // 年     月    日     时    分   秒     毫秒
@@ -76,32 +76,31 @@ exports.pool = [
 exports.forceLogin = false;
 ```
 
-5 确定流程是 *预约-购物车-订单详情* 这种,否则忽略这步骤.还要配置地区 `areaId`. 请打开项目目录下 `area/你所在省份`,找到你所在地区 id 复制配置到 `tasks-pool.js` 中。 如 `area/2.上海.txt`, `'崇明县/东平镇:'2_2919_50783',` 对应 `'2_2919_50783'`, 按照上面示范填入`tasks-pool.js`文件中  
+5 确定流程是 *预约-购物车-订单详情* 这种, 否则忽略这步骤. 有此步骤则*必须*配置地区 `areaId`. 请打开项目目录下 `area/你所在省份`, 找到你所在地区 id 复制配置到 `tasks-pool.js` 中。 如 `area/2.上海.txt`, `'崇明县/东平镇:'2_2919_50783',` 对应 `'2_2919_50783'`, 按照上面示范填入`tasks-pool.js`文件中  
 
 6 当前目录下执行 `node index`  
 
-7 扫描终端中的二维码登录, 24 小时之内重启不需要再次登录, `cookie` 串会保留在本地文件中 `cookie.json` 中。过期的话必须重新扫码
+7 扫描终端中的二维码登录, 24 小时之内重启不需要再次扫码登录, `cookie` 串会保留在本地文件中 `cookie.json` 中。过期的话必须重新扫码
 
 ## Todo
 - [x] 针对从购物车提交订单流程。如果此商品已经在购物车中, 则直接抢购不需要执行添加购物车操作了  
-
 
 
 ## Notice
 - 反对 jd 耍猴, 更反对滥用盈利作恶！
 - 对 `windows` 系统不友好, 有问题反馈
 - 目前最好每天上 jd, 去找商品, 距离开始前十几分钟启动
-- 预约每个人都很容易拿到, 不用使用脚本执行预约, 但是不太需要, 而且没有加入定时
+- 预约每个人都很容易拿到, 不用使用脚本执行预约
 - 这是 node 版本, 不熟悉的可使用 python 版本.(本版本借鉴使用了下面部分功能资源)
 - https://github.com/zhou-xiaojun/jd_mask
-- https://github.com/tychxn/jd-assistant
+- https://github.com/tychxn/jd-assistant(购物车逻辑已经更改了, 此脚本后续没有更新)
 - 功能大同小异, 我根据自身需求加了在终端中扫码, 多进程抢不同商品
-- 关于 jd 口罩问题, 发现和地区有很大关系, 有的地区根本不会抢到(太久了没有在意口罩了把😄)
+- 关于 jd 口罩问题, 发现和地区有很大关系, 有的地区根本不会抢到(时间太久了, 现在没有人会在意口罩了吧😄)
 - 关于上面的问题, 几个类似库 issues 都有讨论
 - https://github.com/zhou-xiaojun/jd_mask/issues/1
 - https://github.com/tychxn/jd-assistant/issues/108#issuecomment-592947377
 - 发现真的地区差异很大，上海一次没有，朋友江苏连续俩次 ---3-19 日最新更新
-- 注意使用最好提前个 `1s`, 因为提交订单前要请求其他俩个接口, 延迟疫苗差不多正好
+- 注意使用最好提前个 `1s`, 因为提交订单前要请求其他俩个接口, 延迟 1s 差不多正好
 - 每天最好提前做一次扫码，或者多提前一会开启脚本
 
 ## 成功案例
@@ -113,7 +112,7 @@ exports.forceLogin = false;
 
 ## Advanced(废弃)
 
-_解决不了 mac 待机状态, 代码不执行问题后执行很延后_
+_解决不了 mac 待机状态, 代码不执行的问题。会延迟很久才执行_
 
 熟悉 `nodejs` 和 `golang` 使用。正常 `master` 版本已经满足实际使用了， 这部分使用说明不会很详细  
 分支 `feture-golang` 新加了 `golang` 的版本。 跟 `master` 分支上的区别:
