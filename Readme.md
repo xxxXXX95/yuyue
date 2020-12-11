@@ -105,7 +105,6 @@ exports.forceLogin = false;
 
 ## 成功案例
 
-- 订单<img src="https://user-images.githubusercontent.com/13815865/77068940-6ee2a180-6a22-11ea-91a9-e174fdd7a96a.png" />
 - 订单<img src="https://user-images.githubusercontent.com/13815865/77068877-56728700-6a22-11ea-8102-925cc25a4b92.png" />
 
 更多案例: [issues/2](https://github.com/meooxx/jd_by_mask/issues/2)
