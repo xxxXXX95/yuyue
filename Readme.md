@@ -1,4 +1,4 @@
-# 买 jd 直营口罩
+# 买 jd 预约抢购商品
 
 ### 此代码基于原作者 https://github.com/tychxn/jd-assistan 进行修改
 
