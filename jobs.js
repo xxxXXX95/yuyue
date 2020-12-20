@@ -236,6 +236,7 @@ async function submitOrderProcess(date, skuId, areaId) {
   };
   if (isKO) {
     console.log('当前流程是预约秒杀流程, 从详情页面直接提交订单的!');
+    console.log('请注意网页中真正的抢购时间, 否则脚本执行时尚未开放购买')
     submitOrderFromItemDetailPage(date, skuId, params);
     return;
   } else {
