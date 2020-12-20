@@ -43,19 +43,23 @@ async function login(directly = false) {
   // console.log(res.headers.raw())
 }
 
-// 抢购
-async function buyMaskProgress(date, skuId, concurrency = 1) {
-  if (!skuId) {
-    console.error('skuId 缺少');
-    return;
-  }
-  // 当前进程读取本地 Cookie, 但不需要验证cookie, true
-  await helper.getLocalCookie(true);
+// 从商品详情提交订单
+async function submitOrderFromItemDetailPage(
+  date,
+  skuId,
+  params,
+  concurrency = 20
+) {
   timer(date, async function () {
+    const isAvailable = await checkItemState(skuId, params);
+    if (!isAvailable) {
+      console.log('哈哈又被耍猴了!');
+      process.exit();
+    }
     console.log('执行获取链接时间:', new Date().toLocaleString());
-    const res = await helper.requestItemPage(skuId);
+    const res = await helper.getKOUrl(skuId);
     if (!res) {
-      console.log('没有抢购链接, 抢购失败未开始可能');
+      console.log('没有抢购链接, 抢购失败可能未开始');
       return;
     }
     console.log('getOrderData:', new Date().toLocaleString());
@@ -73,107 +77,65 @@ async function buyMaskProgress(date, skuId, concurrency = 1) {
           process.exit();
         }
       });
-      await new Promise(r => setTimeout(r, 50));
+      await new Promise(r => setTimeout(r, 100));
     }
   });
 }
-/**
- *
- * @param {*} skuId
- * 当前sku 是否在购物车中
- */
-async function isSkuInCart(skuId, areaId) {
-  // 获取购物车数据
-  const res = await helper.getCartData(areaId);
-  if (res.success) {
-    let allskus = [];
-    res.resultData.cartInfo.vendors.forEach(v => {
-      allskus = allskus.concat(v.sorted);
-    });
-    return !!allskus.find(s => s.item.Id == skuId);
+// 检查当前商品是否开卖了?
+async function checkItemState(skuId, params) {
+  const { area, cat, shopId, venderId, paramJson } = params;
+  let i = 10;
+  let isAvailable = false;
+  // let interval = 200;
+  // 10 * 200 ms 内检查状态
+  while (i--) {
+    try {
+      const yuyue = await helper.getWareInfo({
+        skuId,
+        cat: cat.join(),
+        area,
+        shopId,
+        venderId,
+        paramJson,
+        num: 1,
+      });
+      // type 5 plus 专用
+      // state === 4 抢购, 此时可以添加购物车
+      const { yuyueInfo = {}, stockInfo = {} } = yuyue;
+      const isStock =
+        [33, 40].includes(stockInfo.stockState) && stockInfo.isStock;
+      if (yuyueInfo.state == '4' && isStock) {
+        console.log('准备提交购物车');
+        isAvailable = true;
+        break;
+      } else {
+        // 还剩多少时间
+        console.log(
+          // yuyueInfo.state,
+          stockInfo.stockDesc,
+          yuyueInfo.cdPrefix,
+          yuyueInfo.countdown
+        );
+      }
+    } catch (e) {
+      console.log('查询预约信息失败:', i, e);
+    }
+    await new Promise(r => setTimeout(r, 200));
   }
-  return false;
+  return isAvailable;
 }
 
-// 提交订单, 此流程对应从购物车提交订单流程
-async function submitOrderFromShoppingCart(date, skuId, areaId) {
-  if (!areaId) {
-    console.log('no areaId!请确认填写了正确到areaId');
-    process.exit(0);
-  }
-  await helper.getLocalCookie(true);
-  // 补足 2_xxx_xxx -> 2_xxx_xxx_0
-  const area = areaId.split('_').length === 3 ? `${areaId}_0` : area;
-  // 访问详情页 item.xxx.com/skuId.html
-  const res = await helper.requestItemDetailPage(skuId);
-  const text = await res.text();
-  // skuId,
-  // cat,
-  // area,
-  // shopId,
-  // venderId,
-  // paramJson,
-  // num,
-  const cat = JSON.parse(text.match(/cat:(.*?]),/i)[1]);
-  const venderId = JSON.parse(text.match(/venderId:(.*?),/i)[1]);
-  const shopId = text.match(/shopId:'(.*?)',/i)[1];
-  const paramJson = text.match(/paramJson:\s*'(.*?)'/i)[1];
-
-  // const stock = await helper.getItemStock(skuId, area);
-  // const item = stock[skuId];
-  // IsPurchase: 是否可以购买, false 可以购买, true 不可以
-  // StockState:
-  //  33 现货,
-  //  40 可配货
-  //  0,34 无货
-  //  36 采购中
-  //skuState # 商品是否上架
-  // const { /*IsPurchase,*/ StockState, StockStateName, skuState } = item;
-  // console.log('库存状态:', StockStateName);
-  // if ([0, 34, 36].includes(StockState)) {
-  //   console.log(`狗东耍猴呢!溜了~`);
-  //   process.exit();
-  // }
+/**
+ *
+ * @param {*} date
+ * @param {*} skuId
+ * 从购物车提交订单
+ */
+async function submitOrderFromShoppingCart(date, skuId, params = {}) {
+  const { area } = params;
   const isInCart = await isSkuInCart(skuId, area);
   timer(date, async () => {
-    let i = 10;
-    let isAvailable = false;
-    // let interval = 200;
-    // 10 * 200 ms 内检查状态
-    while (i--) {
-      try {
-        const yuyue = await helper.getWareInfo({
-          skuId,
-          cat: cat.join(),
-          area,
-          shopId,
-          venderId,
-          paramJson,
-          num: 1,
-        });
-        // type 5 plus 专用
-        // state === 4 抢购, 此时可以添加购物车
-        const { yuyueInfo = {}, stockInfo = {} } = yuyue;
-        const isStock =
-          [33, 40].includes(stockInfo.stockState) && stockInfo.isStock;
-        if (yuyueInfo.state == '4' && isStock) {
-          console.log('准备提交购物车');
-          isAvailable = true;
-          break;
-        } else {
-          // 还剩多少时间
-          console.log(
-            // yuyueInfo.state,
-            stockInfo.stockDesc,
-            yuyueInfo.cdPrefix,
-            yuyueInfo.countdown
-          );
-        }
-      } catch (e) {
-        console.log('查询预约信息失败:', i, e);
-      }
-      await new Promise(r => setTimeout(r, 200));
-    }
+    const isAvailable = await checkItemState(skuId, params);
     if (!isAvailable) {
       console.log('哈哈又被耍猴了!');
       process.exit();
@@ -185,7 +147,7 @@ async function submitOrderFromShoppingCart(date, skuId, areaId) {
       // 当前sku 是套装商品, 已经在购物车页面了
       console.log('添加成功,', result);
     }
-    i = 10;
+    let i = 10;
     while (i--) {
       try {
         await Promise.race([
@@ -217,8 +179,77 @@ async function submitOrderFromShoppingCart(date, skuId, areaId) {
     }
   });
 }
+/**
+ *
+ * @param {*} skuId
+ * 当前sku 是否在购物车中
+ */
+async function isSkuInCart(skuId, areaId) {
+  // 获取购物车数据
+  const res = await helper.getCartData(areaId);
+  if (res.success) {
+    let allskus = [];
+    res.resultData.cartInfo.vendors.forEach(v => {
+      allskus = allskus.concat(v.sorted);
+    });
+    return !!allskus.find(s => s.item.Id == skuId);
+  }
+  return false;
+}
 
-exports.buyMaskProgress = buyMaskProgress;
+// 提交订单, 此流程对应从购物车提交订单流程
+async function submitOrderProcess(date, skuId, areaId) {
+  if (!areaId) {
+    console.log('no areaId!请确认填写了正确到areaId');
+    process.exit(0);
+  }
+  if (!skuId) {
+    console.error('skuId 缺少');
+    process.exit(0);
+  }
+  await helper.getLocalCookie(true);
+  // 补足 2_xxx_xxx -> 2_xxx_xxx_0
+  const area = areaId.split('_').length === 3 ? `${areaId}_0` : area;
+  // 访问详情页 item.xxx.com/skuId.html
+  const res = await helper.requestItemDetailPage(skuId);
+  const text = await res.text();
+  // skuId,
+  // cat,
+  // area,
+  // shopId,
+  // venderId,
+  // paramJson,
+  // num,
+  const cat = JSON.parse(text.match(/cat:(.*?]),/i)[1]);
+  const venderId = JSON.parse(text.match(/venderId:(.*?),/i)[1]);
+  const shopId = text.match(/shopId:'(.*?)',/i)[1];
+  const paramJson = text.match(/paramJson:\s*'(.*?)'/i)[1];
+  const specialAttrs = JSON.parse(text.match(/specialAttrs:(.*?]),/i)[1]);
+  // 秒杀则是从 item 详情页面直接提交订单
+  const isKO = specialAttrs.indexOf('isKO') !== -1;
+  const params = {
+    cat,
+    venderId,
+    shopId,
+    paramJson,
+    area,
+  };
+  if (isKO) {
+    console.log('当前流程是预约秒杀流程, 从详情页面直接提交订单的!');
+    submitOrderFromItemDetailPage(date, skuId, params);
+    return;
+  } else {
+    // const stock = await helper.getItemStock(skuId, area);
+    // const item = stock[skuId];
+    // StockState:
+    //  33 现货,
+    //  40 可配货
+    //  0,34 无货
+    //  36 采购中
+    submitOrderFromShoppingCart(date, skuId, params);
+  }
+}
+
 exports.login = login;
 exports.helper = helper;
-exports.submitOrderFromShoppingCart = submitOrderFromShoppingCart;
+exports.submitOrderProcess = submitOrderProcess;

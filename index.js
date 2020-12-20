@@ -16,11 +16,7 @@ try {
   process.exit();
 }
 
-const {
-  buyMaskProgress,
-  login,
-  submitOrderFromShoppingCart,
-} = require('./jobs');
+const { login, submitOrderProcess } = require('./jobs');
 const { pool, forceLogin } = require('./tasks-pool');
 
 if (cluster.isWorker) {
@@ -48,9 +44,8 @@ if (cluster.isWorker) {
         item.skuId
       );
       if (item.areaId) {
-        console.log('此流程对应添加到购物车抢购');
-        submitOrderFromShoppingCart(item.date, item.skuId, item.areaId);
-      } else buyMaskProgress(item.date, item.skuId);
+        submitOrderProcess(item.date, item.skuId, item.areaId);
+      }
     }
   });
 } else {

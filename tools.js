@@ -264,8 +264,8 @@ class Tools {
     // resp_json = parse_json(resp.text)
   };
 
-  /**访问抢购商品页面 */
-  requestItemPage = async skuId => {
+  /**获取抢购连接 */
+  getKOUrl = async skuId => {
     const url = 'https://itemko.jd.com/itemShowBtn';
     const payload = {
       callback: `jQuery${this.getRandomNumber()}`,
@@ -295,7 +295,7 @@ class Tools {
             .replace('divide', 'marathon')
             .replace('user_routing', 'captcha.html');
 
-          console.log(`已经获取到抢购链接: ${seckillUrl}`);
+          console.log(`已经获取到抢购链接: ${seckillUrl}`, result.type);
           this.reserveUrl = seckillUrl;
           try {
             await this.request(seckillUrl, {
