@@ -189,6 +189,7 @@ async function isSkuInCart(skuId, areaId) {
   const res = await helper.getCartData(areaId);
   if (res.success) {
     let allskus = [];
+    if (!res.resultData.cartInfo) return false
     res.resultData.cartInfo.vendors.forEach(v => {
       allskus = allskus.concat(v.sorted);
     });
