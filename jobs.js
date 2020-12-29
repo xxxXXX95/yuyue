@@ -210,7 +210,7 @@ async function submitOrderProcess(date, skuId, areaId) {
   }
   await helper.getLocalCookie(true);
   // 补足 2_xxx_xxx -> 2_xxx_xxx_0
-  const area = areaId.split('_').length === 3 ? `${areaId}_0` : area;
+  const area = areaId.split('_').length === 3 ? `${areaId}_0` : areaId;
   // 访问详情页 item.xxx.com/skuId.html
   const res = await helper.requestItemDetailPage(skuId);
   const text = await res.text();
