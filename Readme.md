@@ -38,6 +38,7 @@ const config = {
   // value 属性中的值复制过来
   eid: '', // string, 必填
   fp: '', // string, 必填
+  pwd: '', // 6位支付密码如'123456'最好填上.如果当前有红包之类的必填
 };
 
 module.exports = config;

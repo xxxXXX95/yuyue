@@ -230,6 +230,15 @@ class Tools {
     return Math.floor(Math.random() * (9999999 - 1000000 + 1) + 1000000);
   };
 
+  // 加密支付密码
+  stringToHex = (str = '') => {
+    var val = '';
+    for (var i = 0; i < str.length; i++) {
+      val += 'u' + str.charCodeAt(i).toString(16);
+    }
+    return val;
+  };
+
   // 预约商品
   getReserveUrl = async sku_id => {
     const url = 'https://yushou.jd.com/youshouinfo.action';
@@ -397,7 +406,7 @@ class Tools {
           invoicePhone: invoiceInfo.invoicePhone || '',
           invoicePhoneKey: invoiceInfo.invoicePhoneKey || '',
           invoice: invoiceInfo ? 'true' : 'false',
-          password: '',
+          password: this.stringToHex(config.pwd),
           codTimeType: 3,
           paymentType: 4,
           areaCode: '',
@@ -623,6 +632,9 @@ class Tools {
       'submitOrderParam.eid': config.eid,
       'submitOrderParam.fp': config.fp,
     };
+    if (config.pwd) {
+      payload['submitOrderParam.payPassword'] = this.stringToHex(config.pwd);
+    }
     const res = await this.request(url, {
       headers,
       body: qs.stringify(payload),

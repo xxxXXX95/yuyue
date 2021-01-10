@@ -84,8 +84,12 @@ async function submitOrderFromItemDetailPage(
 // 检查当前商品是否开卖了?
 async function checkItemState(skuId, params) {
   const { area, cat, shopId, venderId, paramJson } = params;
-  let i = 10;
+  let i = 1;
   let isAvailable = false;
+
+  let seconds = 0;
+  let btnText = '';
+  let stock = '';
   // let interval = 200;
   // 10 * 200 ms 内检查状态
   while (i--) {
@@ -105,7 +109,6 @@ async function checkItemState(skuId, params) {
       const isStock =
         [33, 40].includes(stockInfo.stockState) && stockInfo.isStock;
       if (yuyueInfo.state == '4' && isStock) {
-        console.log('准备提交购物车');
         isAvailable = true;
         break;
       } else {
@@ -116,11 +119,31 @@ async function checkItemState(skuId, params) {
           yuyueInfo.cdPrefix,
           yuyueInfo.countdown
         );
+        seconds = yuyueInfo.countdown;
+        btnText = yuyueInfo.btnText;
+        state = yuyueInfo.state;
+        stock = isStock;
       }
     } catch (e) {
       console.log('查询预约信息失败:', i, e);
     }
     await new Promise(r => setTimeout(r, 200));
+  }
+  // 不可用, 不是state ===4, 且有剩余时间
+  // 说明抢购流程不是在预约结束
+  // 预约结束之后还有一小段时间
+  if (!isAvailable && stock && seconds) {
+    let reminder = Date.now() + seconds * 1000;
+    if (seconds > 3600) {
+      console.log('抢购还有很长时间请修改时间重试,剩余秒数,', seconds, btnText);
+      process.exit();
+    }
+    console.log('抢购可能在一小时内开始, 继续在此等待..', btnText, seconds);
+    while (true) {
+      if (Date.now() >= reminder) {
+        return true;
+      }
+    }
   }
   return isAvailable;
 }
@@ -134,24 +157,46 @@ async function checkItemState(skuId, params) {
 async function submitOrderFromShoppingCart(date, skuId, params = {}) {
   const { area } = params;
   const isInCart = await isSkuInCart(skuId, area);
+  // 先加到购物车
+  try {
+    const { stockInfo = {} } = await helper.getWareInfo({
+      skuId,
+      ...params,
+      num: 1,
+    });
+    if (stockInfo.isStock) {
+      if (!isInCart) {
+        console.log('准备提交购物车');
+        // 有货哦
+        const result = await helper.addItemToCart(skuId);
+        // 已经跳转至购物车页面
+        // 当前sku 是套装商品, 已经在购物车页面了
+        console.log('添加成功,', result);
+      }
+    }
+  } catch (e) {
+    // e
+  }
+
   timer(date, async () => {
     const isAvailable = await checkItemState(skuId, params);
     if (!isAvailable) {
       console.log('哈哈又被耍猴了!');
       process.exit();
     }
-    if (!isInCart) {
-      // 有货哦
-      const result = await helper.addItemToCart(skuId);
-      // 已经跳转至购物车页面
-      // 当前sku 是套装商品, 已经在购物车页面了
-      console.log('添加成功,', result);
-    }
+
     let i = 10;
     while (i--) {
       try {
         await Promise.race([
-          helper.requestCheckoutPage(),
+          helper.requestCheckoutPage().then(r => {
+            if (
+              res.url.indexOf('trade.jd.com/shopping/orderBack.html') !== -1
+            ) {
+              console.log('商品已经卖完, 结算页面为空, 溜了');
+              process.exit();
+            }
+          }),
           new Promise((_, r) => setTimeout(r, 500, '请求结算页面超过500ms')),
         ]);
         console.log('访问购物车结算页面成功');
@@ -170,6 +215,12 @@ async function submitOrderFromShoppingCart(date, skuId, params = {}) {
           await helper.sendToWechat(text);
           process.exit();
         } else {
+          if (res.noStockSkuIds) {
+            if (res.noStockSkuIds.indexOf(skuId) !== -1) {
+              console.log('这些sku没有库存遛了,', res.noStockSkuIds);
+              return;
+            }
+          }
           console.log('尝试index', i, '失败原因', res.message || res);
         }
       } catch (e) {
@@ -189,7 +240,7 @@ async function isSkuInCart(skuId, areaId) {
   const res = await helper.getCartData(areaId);
   if (res.success) {
     let allskus = [];
-    if (!res.resultData.cartInfo) return false
+    if (!res.resultData.cartInfo) return false;
     res.resultData.cartInfo.vendors.forEach(v => {
       allskus = allskus.concat(v.sorted);
     });
@@ -237,7 +288,7 @@ async function submitOrderProcess(date, skuId, areaId) {
   };
   if (isKO) {
     console.log('当前流程是预约秒杀流程, 从详情页面直接提交订单的!');
-    console.log('请注意网页中真正的抢购时间, 否则脚本执行时尚未开放购买')
+    console.log('请注意网页中真正的抢购时间, 否则脚本执行时尚未开放购买');
     submitOrderFromItemDetailPage(date, skuId, params);
     return;
   } else {
