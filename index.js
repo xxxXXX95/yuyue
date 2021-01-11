@@ -43,9 +43,7 @@ if (cluster.isWorker) {
         'sku',
         item.skuId
       );
-      if (item.areaId) {
-        submitOrderProcess(item.date, item.skuId, item.areaId);
-      }
+      submitOrderProcess(item.date, item.skuId, item.areaId);
     }
   });
 } else {

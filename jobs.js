@@ -51,15 +51,38 @@ async function submitOrderFromItemDetailPage(
   concurrency = 20
 ) {
   timer(date, async function () {
-    const isAvailable = await checkItemState(skuId, params);
-    if (!isAvailable) {
-      console.log('哈哈又被耍猴了!');
-      process.exit();
-    }
     console.log('执行获取链接时间:', new Date().toLocaleString());
-    const res = await helper.getKOUrl(skuId);
+    let res = await helper.getKOUrl(skuId);
     if (!res) {
       console.log('没有抢购链接, 抢购失败可能未开始');
+      console.log('检查商品状态...');
+      const [isAvailable, ms] = await checkItemState(skuId, params, 1);
+      const endTime = Date.now() + ms;
+      if (isAvailable) {
+        console.log(
+          '代码错误, 请联系我:https://github.com/meooxx/jd_yuyue/issues'
+        );
+      }
+      if (ms) {
+        // 大于1h
+        if (ms > 60 * 60 * 1000) {
+          console.log(
+            '抢购还有很长时间开始, 请修改时间重新启动, 剩余秒数:',
+            ms / 1000
+          );
+          process.exit();
+        }
+        console.log(ms / 1000, '秒后抢购开始, 继续在此等待..');
+        while (true) {
+          if (Date.now() >= endTime) {
+            break;
+          }
+        }
+        console.log('再次执行获取链接时间');
+        res = await helper.getKOUrl(skuId);
+      }
+    }
+    if (!res) {
       return;
     }
     console.log('getOrderData:', new Date().toLocaleString());
@@ -82,18 +105,19 @@ async function submitOrderFromItemDetailPage(
   });
 }
 // 检查当前商品是否开卖了?
-async function checkItemState(skuId, params) {
+async function checkItemState(skuId, params, retry = 10) {
   const { area, cat, shopId, venderId, paramJson } = params;
-  let i = 1;
+  let i = retry;
   let isAvailable = false;
 
   let seconds = 0;
-  let btnText = '';
   let stock = '';
+  let preTime = Date.now();
   // let interval = 200;
   // 10 * 200 ms 内检查状态
   while (i--) {
     try {
+      preTime = Date.now();
       const yuyue = await helper.getWareInfo({
         skuId,
         cat: cat.join(),
@@ -119,33 +143,24 @@ async function checkItemState(skuId, params) {
           yuyueInfo.cdPrefix,
           yuyueInfo.countdown
         );
-        seconds = yuyueInfo.countdown;
-        btnText = yuyueInfo.btnText;
-        state = yuyueInfo.state;
         stock = isStock;
+        seconds = yuyueInfo.countdown;
       }
     } catch (e) {
       console.log('查询预约信息失败:', i, e);
     }
-    await new Promise(r => setTimeout(r, 200));
+    if (i) {
+      await new Promise(r => setTimeout(r, 200));
+    }
   }
   // 不可用, 不是state ===4, 且有剩余时间
   // 说明抢购流程不是在预约结束
   // 预约结束之后还有一小段时间
   if (!isAvailable && stock && seconds) {
-    let reminder = Date.now() + seconds * 1000;
-    if (seconds > 3600) {
-      console.log('抢购还有很长时间请修改时间重试,剩余秒数,', seconds, btnText);
-      process.exit();
-    }
-    console.log('抢购可能在一小时内开始, 继续在此等待..', btnText, seconds);
-    while (true) {
-      if (Date.now() >= reminder) {
-        return true;
-      }
-    }
+    const diff = Date.now() - preTime;
+    return [isAvailable, seconds * 1000 + diff];
   }
-  return isAvailable;
+  return [isAvailable];
 }
 
 /**
@@ -288,7 +303,7 @@ async function submitOrderProcess(date, skuId, areaId) {
   };
   if (isKO) {
     console.log('当前流程是预约秒杀流程, 从详情页面直接提交订单的!');
-    console.log('请注意网页中真正的抢购时间, 否则脚本执行时尚未开放购买');
+    console.log('请留意窗口打印信息');
     submitOrderFromItemDetailPage(date, skuId, params);
     return;
   } else {

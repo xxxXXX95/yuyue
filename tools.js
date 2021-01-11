@@ -227,7 +227,7 @@ class Tools {
     fs.writeFileSync(cookiePath, JSON.stringify(json));
   };
   getRandomNumber = (max = 9999999, min = 1000000) => {
-    return Math.floor(Math.random() * (9999999 - 1000000 + 1) + 1000000);
+    return Math.floor(Math.random() * (max - min + 1) + min);
   };
 
   // 加密支付密码
@@ -406,7 +406,7 @@ class Tools {
           invoicePhone: invoiceInfo.invoicePhone || '',
           invoicePhoneKey: invoiceInfo.invoicePhoneKey || '',
           invoice: invoiceInfo ? 'true' : 'false',
-          password: this.stringToHex(config.pwd),
+          password: config.pwd || '',
           codTimeType: 3,
           paymentType: 4,
           areaCode: '',

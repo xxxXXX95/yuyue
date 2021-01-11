@@ -5,7 +5,8 @@ const getDiffTime = async () => {
   const old = Date.now();
   const res = await fetch('https://a.jd.com//ajax/queryServerData.html', {
     headers: {
-      'User-Agent': config.userAgent,
+      // 瞎鸡儿填写一个 UA
+      'User-Agent': config.userAgent || "chrome 81.0",
     },
   });
   const json = await res.json();

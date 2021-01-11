@@ -1,19 +1,19 @@
 # 买 jd 预约抢购商品（原jd_by_mask）
 
-### 此代码基于原作者 https://github.com/tychxn/jd-assistan 进行修改
+### 此代码受启发 https://github.com/tychxn/jd-assistan 完成
 
 ## 支持预约-抢购-提交订单流程的商品
 
-狗东现有俩种抢购模式
-
-1. 到时间直接抢购(例如以前的口罩, 现在是会员预约抢购那种会使用此模式)
+狗东现有俩种抢购模式, 现在程序内部实现了自动区分俩种流程。区分依据参照下文`代码分析`处贴的俩个js文件
+1. 到时间直接抢购, 也叫秒杀(例如以前的口罩, 现在的茅台等)
 2. 到时间先添加购物车 -> 到购物车提交订单(普通显卡预约抢购类)  
 
 写在前面
-1. 模式1特别说明:此类商品现在（20201220这段时间）特征是狗东会员才可以在具体时间段内预约, 预约结束后, **再等一段时间（显卡的这个时间不长5-10分钟）, 才可以抢购**. 注意终端中提示 `"当前流程是预约秒杀流程, 从详情页面直接提交订单的!"`, 这样的提示就是此模式. 此模式要设定真正的抢购时间。**`网页中预约结束后会再显示一个抢购开始时间，这个才是真正抢购时间`**, 需要修改下脚本执行时间, 重新启动
-2. 之前让使用者来确定流程, 现在可以根据商品自动区分使用哪种模式, 因此`areadId`现在是必填
-3. 已知 windows 系统自带终端打印出来的二维码错位, 请更换终端或者手动打开自动生成的`qrcode.png`文件扫码
-4. 由`jd_by_mask` 改名 `jd_yuyue`.之前使用错别字防止搜索且买口罩也不符合现在仓库内容, 所以改名yuyue了
+1. 模式1特别说明: 此模式商品展示无明显特征(console控制台倒是可以打印对应参数区分).但是会员有资格抢购的商品, 大概率是这种模式.**`抢购时间有可能立即开始, 也有可能需要预约结束后再等一小段时间(5min左右)才可以抢购`**。需要不需要再等都遇到过。抢购时注意终端中会提示 `"当前流程是预约秒杀流程`, 这样的提示就是此模式. 
+2. 如果需要再等1h内, 程序会阻塞在此继续等待执行.超过一个小时会退出, 提示你修改时间后再重启
+3. 因为狗东有红包的话, 会自动勾选使用红包.为了抢购成功和快速,配置文件中最好填写6位支付密码(保存密码的`config.js` **`不会从你本地上传到任何地方,请放心!!`**)
+4. 已知 `windows` 系统自带终端打印出来的二维码错位, 请更换终端或者手动打开自动生成的本目录下`qrcode.png`文件扫码
+5. 由`jd_by_mask` 改名 `jd_yuyue`.之前使用错别字防止搜索且买口罩也不符合现在仓库内容, 所以改名yuyue了
 
 ## Quick Start
 
@@ -38,13 +38,13 @@ const config = {
   // value 属性中的值复制过来
   eid: '', // string, 必填
   fp: '', // string, 必填
-  pwd: '', // 6位支付密码如'123456'最好填上.如果当前有红包之类的必填
+  pwd: '', // 6位支付密码如 '123456' 最好填上.如果当前账号有红包之类的则必填
 };
 
 module.exports = config;
 ```
 
-2 需要有 `node` 开发环境开发使用 `nodejs` v12.x, 没有 nodejs 官网下载一个就行. 下载安装完后终端执行 `node -v` 查看版本. 其自带包管理器 `npm`
+2 需要有 `node` 开发环境开发使用 `nodejs` v12.x以上, 没有 nodejs 官网下载一个就行. 下载安装完后终端执行 `node -v` 查看版本. 其自带包管理器 `npm`
 
 3 在目录下执行 `npm install` 或者 `yarn`(不熟悉的, 就直接使用 npm 效果一样的) 安装依赖, 已经默认配置使用 `taobao` 镜像地址下载依赖包
 
@@ -84,11 +84,17 @@ exports.forceLogin = false;
 
 6 当前目录下执行 `node index`  
 
-7 扫描终端中的二维码登录, 24 小时之内重启不需要再次扫码登录, `cookie` 串会保留在本地文件中 `cookie.json` 中。过期的话必须重新扫码（自动校验）
+7 扫描终端中的二维码登录, 24 小时之内重启不需要再次扫码登录, `cookie` 串会保留在本地文件中 `cookie.json` 中。过期的话必须重新扫码（代码自动校验）
 
 ## Todo
+- [x] 如果预约时间结束, 还需要等待一小段时间后才抢购, 程序自动等待执行(1h内)
 - [x] 根据商品, 自动确定抢购流程
 - [x] 针对从购物车提交订单流程。如果此商品已经在购物车中, 则直接抢购不需要执行添加购物车操作了
+
+## 代码分析
+区分抢购模式主要js代码文件
+* [isKO逻辑js](https://static.360buyimg.com/item/unite/1.0.114/components/??default-soa/common/common.js,default-soa/address/address.js,default-soa/prom/prom.js,default-soa/colorsize/colorsize.js,default-soa/buytype/buytype.js,default-soa/baitiao/baitiao.js,default-soa/o2o/o2o.js,default-soa/buybtn/buybtn.js,default-soa/pingou/pingou.js,default-soa/track/track.js,default-soa/suits/suits.js,default-soa/crumb/crumb.js,default-soa/fittings/fittings.js,default-soa/contact/contact.js,default-soa/popbox/popbox.js,default-soa/preview/preview.js,default-soa/info/info.js,default-soa/imcenter/imcenter.js,default-soa/jdservice/jdservice.js,default-soa/jdservicePlus/jdservicePlus.js,default-soa/jdserviceF/jdserviceF.js,default-soa/commitments/commitments.js,default-soa/gift/gift.js,default-soa/vehicle/vehicle.js,default-soa/lazyinit/lazyinit.js,public-soa/modules/detail/detail.js)
+* [设置按钮状态逻辑](https://static.360buyimg.com/item/unite/1.0.114/components/??default/common/plugins/jQuery.scroller.js,default-soa/buybtn/reservation.js,default-soa/buybtn/ko.js,default-soa/buybtn/bigouma.js)
 
 ## Notice
 - 反对 jd 耍猴, 更反对滥用盈利作恶！
