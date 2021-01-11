@@ -189,7 +189,7 @@ async function submitOrderFromShoppingCart(date, skuId, params = {}) {
     while (i--) {
       try {
         await Promise.race([
-          helper.requestCheckoutPage().then(r => {
+          helper.requestCheckoutPage().then(res => {
             if (
               res.url.indexOf('trade.jd.com/shopping/orderBack.html') !== -1
             ) {
