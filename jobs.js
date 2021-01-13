@@ -105,7 +105,7 @@ async function submitOrderFromItemDetailPage(
   });
 }
 // 检查当前商品是否开卖了?
-async function checkItemState(skuId, params, retry = 10) {
+async function checkItemState(skuId, params, retry = 30) {
   const { area, cat, shopId, venderId, paramJson } = params;
   let i = retry;
   let isAvailable = false;
@@ -150,7 +150,7 @@ async function checkItemState(skuId, params, retry = 10) {
       console.log('查询预约信息失败:', i, e);
     }
     if (i) {
-      await new Promise(r => setTimeout(r, 200));
+      await new Promise(r => setTimeout(r, 80));
     }
   }
   // 不可用, 不是state ===4, 且有剩余时间
@@ -171,7 +171,7 @@ async function checkItemState(skuId, params, retry = 10) {
  */
 async function submitOrderFromShoppingCart(date, skuId, params = {}) {
   const { area } = params;
-  const isInCart = await isSkuInCart(skuId, area);
+  let isInCart = await isSkuInCart(skuId, area);
   // 先加到购物车
   try {
     const { stockInfo = {} } = await helper.getWareInfo({
@@ -179,28 +179,44 @@ async function submitOrderFromShoppingCart(date, skuId, params = {}) {
       ...params,
       num: 1,
     });
+    console.log('库存信息:', stockInfo.stockState, '有货:', stockInfo.isStock);
     if (stockInfo.isStock) {
       if (!isInCart) {
         console.log('准备提交购物车');
         // 有货哦
         const result = await helper.addItemToCart(skuId);
+        if (!result) {
+          console.log(
+            '!!!添加购物车请求成功, 但没响应购物车链接, 有可能是秒杀流程!!!'
+          );
+          console.log(
+            '请先手动设置taskPool中指定forceKO: true,指定使用秒杀流程'
+          );
+          process.exit();
+        }
         // 已经跳转至购物车页面
         // 当前sku 是套装商品, 已经在购物车页面了
         console.log('添加成功,', result);
+        isInCart = true;
       }
+    } else {
+      console.log('商品无货, 请检查距离开抢日期前是否太久');
+      console.log('如果距离开抢时间太久, 有可能会更新库存');
+      console.log('请距离开抢日期稍近再启动脚本');
+      process.exit();
     }
   } catch (e) {
     // e
   }
 
   timer(date, async () => {
-    const isAvailable = await checkItemState(skuId, params);
-    if (!isAvailable) {
-      console.log('哈哈又被耍猴了!');
-      process.exit();
-    }
-
-    let i = 10;
+    // let [isAvailable] = await checkItemState(skuId, params, 1);
+    // if (!isAvailable) {
+    //   console.log('哈哈又被耍猴了!');
+    //   process.exit();
+    // }
+    let isAvailable = false;
+    let i = 30;
     while (i--) {
       try {
         await Promise.race([
@@ -208,17 +224,32 @@ async function submitOrderFromShoppingCart(date, skuId, params = {}) {
             if (
               res.url.indexOf('trade.jd.com/shopping/orderBack.html') !== -1
             ) {
-              console.log('商品已经卖完, 结算页面为空, 溜了');
-              process.exit();
+              throw Error(
+                '尝试访问订单结算页面失败, 可能没货或者没到时间.准备重试...'
+              );
             }
           }),
-          new Promise((_, r) => setTimeout(r, 500, '请求结算页面超过500ms')),
+          new Promise((_, r) =>
+            setTimeout(r, 500, '请求结算页面超过500ms, 准备重试')
+          ),
         ]);
-        console.log('访问购物车结算页面成功');
+        isAvailable = true;
+        console.log('访问结算页面成功, 准备提交订单');
         break;
       } catch (e) {
-        console.log('访问订单页面失败', e);
+        console.log('访问结算页面失败:', e.message);
       }
+      await new Promise(r => setTimeout(r, 100));
+    }
+    if (!isAvailable) {
+      console.log('访问结算页面彻底失败, 溜了');
+      const { stockInfo = {} } = await helper.getWareInfo({
+        skuId,
+        ...params,
+        num: 1,
+      });
+      console.log('库存信息:', stockInfo.stockState, stockInfo.isStock);
+      process.exit();
     }
     i = 20;
     while (i--) {
@@ -232,7 +263,9 @@ async function submitOrderFromShoppingCart(date, skuId, params = {}) {
         } else {
           if (res.noStockSkuIds) {
             if (res.noStockSkuIds.indexOf(skuId) !== -1) {
-              console.log('这些sku没有库存遛了,', res.noStockSkuIds);
+              console.log(
+                `这些sku没有库存遛了:抢购的${skuId} in ${res.noStockSkuIds}`
+              );
               return;
             }
           }
@@ -265,14 +298,14 @@ async function isSkuInCart(skuId, areaId) {
 }
 
 // 提交订单, 此流程对应从购物车提交订单流程
-async function submitOrderProcess(date, skuId, areaId) {
+async function submitOrderProcess(date, skuId, areaId, forceKO = false) {
   if (!areaId) {
     console.log('no areaId!请确认填写了正确到areaId');
-    process.exit(0);
+    process.exit(1);
   }
   if (!skuId) {
     console.error('skuId 缺少');
-    process.exit(0);
+    process.exit(1);
   }
   await helper.getLocalCookie(true);
   // 补足 2_xxx_xxx -> 2_xxx_xxx_0
@@ -301,7 +334,7 @@ async function submitOrderProcess(date, skuId, areaId) {
     paramJson,
     area,
   };
-  if (isKO) {
+  if (isKO || forceKO) {
     console.log('当前流程是预约秒杀流程, 从详情页面直接提交订单的!');
     console.log('请留意窗口打印信息');
     submitOrderFromItemDetailPage(date, skuId, params);

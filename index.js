@@ -5,11 +5,6 @@ const fs = require('fs');
 
 try {
   fs.accessSync(filePath, fs.constants.F_OK);
-  const config = require('./config');
-  if (!config.eid || !config.fp) {
-    console.log('请在 config.js 按备注填写 `eid` 和  `fp`');
-    process.exit();
-  }
 } catch (e) {
   console.log(e);
   console.log('请按 readme中, 在本目录下新建 config.js 并填写内容');
@@ -18,11 +13,16 @@ try {
 
 const { login, submitOrderProcess } = require('./jobs');
 const { pool, forceLogin } = require('./tasks-pool');
+const config = require('./config');
+if (!config.eid || !config.fp) {
+  console.log('请在 config.js 按备注填写 `eid` 和  `fp`');
+  process.exit();
+}
 
 if (cluster.isWorker) {
   cluster.worker.once('message', item => {
     if (item.type === 'loginWork') {
-      console.log('progress worker login', process.pid);
+      console.log('progress.worker login', process.pid);
       if (item.forceLogin) {
         console.warn(
           '已开启强制扫码登录, 如果接下里24小时内频繁重启, 重启最好关闭了'
@@ -34,16 +34,17 @@ if (cluster.isWorker) {
         cluster.worker.send('loginReady');
       });
     } else {
+      const { date, skuId, areaId = config.areaId, forceKO = false } = item;
       // 任务进程
       console.log(
-        'progress worker login',
+        'progress.worker:',
         process.pid,
         '时间:',
         item.date,
         'sku',
         item.skuId
       );
-      submitOrderProcess(item.date, item.skuId, item.areaId);
+      submitOrderProcess(date, skuId, areaId, forceKO);
     }
   });
 } else {

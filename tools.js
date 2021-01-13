@@ -295,7 +295,6 @@ class Tools {
         const res = await this.request(url + `?${qs.stringify(payload)}`, {
           headers,
         });
-        // console.log(`正在请求:${url}`)
         const result = this.parseJsonp(await res.text());
 
         if (result.url) {
@@ -306,22 +305,28 @@ class Tools {
 
           console.log(`已经获取到抢购链接: ${seckillUrl}`, result.type);
           this.reserveUrl = seckillUrl;
-          try {
-            await this.request(seckillUrl, {
-              method: 'GET',
-              headers: {
-                'User-Agent': this.userAgent,
-                Host: 'marathon.jd.com',
-                Referer: `https://item.jd.com/${skuId}.html`,
-              },
-            });
-          } catch (e) {
-            console.log('request seckillUrl err');
+          let n = 10;
+          while (n--) {
+            try {
+              await Promise.race([
+                this.request(seckillUrl, {
+                  method: 'GET',
+                  headers: {
+                    'User-Agent': this.userAgent,
+                    Host: 'marathon.jd.com',
+                    Referer: `https://item.jd.com/${skuId}.html`,
+                  },
+                }),
+                new Promise((_, r) => setTimeout(r, 500, '访问秒杀链接超时')),
+              ]);
+              break;
+            } catch (e) {
+              console.log('访问秒杀链接出错', e.message);
+            }
           }
-
           return seckillUrl;
         }
-        console.log('在重试获取抢购链接', result);
+        console.log(result, ',重试获取抢购链接');
         // 直接重试
         await new Promise(r => setTimeout(r, 100));
       } catch (e) {}
