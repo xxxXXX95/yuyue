@@ -46,7 +46,7 @@ module.exports = config;
 
 2 需要有 `node` 开发环境开发使用 `nodejs` v12.x以上, 没有 nodejs 官网下载一个就行. 下载安装完后终端执行 `node -v` 查看版本. 其自带包管理器 `npm`
 
-3 在目录下执行 `npm install` 或者 `yarn`(不熟悉的, 就直接使用 npm 效果一样的) 安装依赖, 已经默认配置使用 `taobao` 镜像地址下载依赖包
+3 在`本项目目录`(不是 nodejs 安装目录)下执行 `npm install` 或者 `yarn`(不熟悉的, 就直接使用 npm 效果一样的) 安装依赖, 已经默认配置使用 `taobao` 镜像地址下载依赖包
 
 4 配置`tasks-pool.js`(以前在*index.js* 中, 现在迁移出来了) 中设置日期 `date`, `areadId` 和要抢购的 `skuId`, 格式如下
 
