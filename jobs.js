@@ -297,17 +297,14 @@ async function isSkuInCart(skuId, areaId) {
   return false;
 }
 
-// 提交订单, 此流程对应从购物车提交订单流程
-async function submitOrderProcess(date, skuId, areaId, forceKO = false) {
-  if (!areaId) {
-    console.log('no areaId!请确认填写了正确到areaId');
-    process.exit(1);
-  }
-  if (!skuId) {
-    console.error('skuId 缺少');
-    process.exit(1);
-  }
-  await helper.getLocalCookie(true);
+/**
+ *
+ * @param {*} skuId skuid
+ * @param {*} areaId areaId
+ * @returns {array} [isKO, {cat, area,...}]
+ * 访问商品 detail 页面, 获取商品是否是秒杀商品和其他参数
+ */
+async function getPageConfig(skuId, areaId) {
   // 补足 2_xxx_xxx -> 2_xxx_xxx_0
   const area = areaId.split('_').length === 3 ? `${areaId}_0` : areaId;
   // 访问详情页 item.xxx.com/skuId.html
@@ -327,13 +324,33 @@ async function submitOrderProcess(date, skuId, areaId, forceKO = false) {
   const specialAttrs = JSON.parse(text.match(/specialAttrs:(.*?]),/i)[1]);
   // 秒杀则是从 item 详情页面直接提交订单
   const isKO = specialAttrs.indexOf('isKO') !== -1;
-  const params = {
-    cat,
-    venderId,
-    shopId,
-    paramJson,
-    area,
-  };
+  return [isKO, { cat, venderId, shopId, paramJson, area }];
+}
+
+// 提交订单, 此流程对应从购物车提交订单流程
+async function submitOrderProcess(date, skuId, areaId, forceKO = false) {
+  if (!areaId) {
+    console.log('no areaId!请确认填写了正确到areaId');
+    process.exit(1);
+  }
+  if (!skuId) {
+    console.error('skuId 缺少');
+    process.exit(1);
+  }
+  await helper.getLocalCookie(true);
+  let [isKO, params] = await getPageConfig(skuId, areaId);
+  if (!isKO && !forceKO) {
+    let m = 5;
+    while (1) {
+      if (Date.now() + m * 60 * 1000 >= date) {
+        [isKO, params] = await getPageConfig(skuId, areaId);
+        m--;
+        if (isKO || m <= 1) {
+          break;
+        }
+      }
+    }
+  }
   if (isKO || forceKO) {
     console.log('当前流程是预约秒杀流程, 从详情页面直接提交订单的!');
     console.log('请留意窗口打印信息');
