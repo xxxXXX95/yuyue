@@ -11,7 +11,10 @@ try {
   process.exit();
 }
 
-const { login, submitOrderProcess } = require('./jobs');
+const {
+  login,
+  submitOrderProcess,
+} = require('./jobs');
 const { pool, forceLogin } = require('./tasks-pool');
 const config = require('./config');
 if (!config.eid || !config.fp) {
@@ -20,44 +23,61 @@ if (!config.eid || !config.fp) {
 }
 
 if (cluster.isWorker) {
-  cluster.worker.once('message', item => {
-    if (item.type === 'loginWork') {
-      console.log('progress.worker login', process.pid);
-      if (item.forceLogin) {
-        console.warn(
-          '已开启强制扫码登录, 如果接下里24小时内频繁重启, 重启最好关闭了'
-        );
-      }
-      login(item.forceLogin).then(() => {
-        // 登陆完成后通知主进程
-        // 派生任务进程
-        cluster.worker.send('loginReady');
-      });
-    } else {
-      const { date, skuId, areaId = config.areaId, forceKO = false } = item;
-      // 任务进程
-      console.log(
-        'progress.worker:',
-        process.pid,
-        '时间:',
-        item.date,
-        'sku',
-        item.skuId
+  const setupLoginWork = item => {
+    console.log('progress.worker:login', process.pid);
+    if (item.forceLogin) {
+      console.warn(
+        '已开启强制扫码登录, 如果接下里24小时内频繁重启, 重启最好关闭了'
       );
-      submitOrderProcess(date, skuId, areaId, forceKO);
+    }
+    return login(item.forceLogin);
+  };
+  const setupWork = item => {
+    const { date, skuId, areaId = config.areaId, forceKO = false } = item;
+    // 任务进程
+    console.log(
+      'progress.worker:',
+      process.pid,
+      '时间:',
+      item.date,
+      'sku',
+      item.skuId
+    );
+    submitOrderProcess(date, skuId, areaId, forceKO);
+  };
+  process.on('unhandledRejection', (reason, promise) => {
+    console.log(reason);
+  });
+  cluster.worker.on('message', async job => {
+    if (job.type === 'login') {
+      await setupLoginWork(job);
+      cluster.worker.send({ doneWork: 'login' });
+    }
+    if (job.type === 'task') {
+      setupWork(job);
     }
   });
 } else {
   // 使用独立进程登陆
   // forcelogin, 强制登陆一次
-  cluster.fork().send({ type: 'loginWork', forceLogin });
-  cluster.on('message', () => {
-    // 登陆完成后
-    for (i = 0; i < pool.length; i++) {
-      const item = pool[i];
-      cluster.fork().send(item);
+  cluster.fork().send({ type: 'login', forceLogin });
+  cluster.on('message', (_, message) => {
+    // 登陆流程
+    if (message.doneWork === 'login') {
+      // 登陆完成后
+      for (i = 0; i < pool.length; i++) {
+        const item = pool[i];
+        cluster.fork().send({ ...item, type: 'task' });
+      }
+    }
+    // fork 秒杀流程
+    if (message.doneWork === 'forkKO') {
+      for (i = 0; i < message.items.length; i++) {
+        const item = message.items[i];
+        cluster.fork().send({ ...item, type: 'task', forceKO: true });
+      }
     }
   });
 
-  console.log('main progress');
+  console.log('progress.master:', process.pid);
 }
