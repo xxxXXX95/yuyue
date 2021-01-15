@@ -203,11 +203,35 @@ async function submitOrderFromShoppingCart(date, skuId, params = {}) {
       console.log('商品无货, 请检查距离开抢日期前是否太久');
       console.log('如果距离开抢时间太久, 有可能会更新库存');
       console.log('请距离开抢日期稍近再启动脚本');
+      console.log('退出抢购商品sku:', skuId);
       process.exit();
     }
   } catch (e) {
     // e
   }
+  // let r = '';
+  // let quit = '';
+  // process.send({
+  //   doneWork: 'addCart',
+  //   next: r,
+  //   quit,
+  //   skuId,
+  // });
+  // try {
+  //   await new Promise((resolve, reject) => {
+  //     r = resolve;
+  //     quit = reject;
+  //   });
+  //   console.log('已经添加到购物车了, 后续任务交给专门提交订单的进程了');
+  // } catch (e) {
+  //   process.exit();
+  // }
+
+  // // 尝试访问购物车页面, 防止缺少某些cookie
+  // try {
+  //   await helper.requestCartPage(skuId);
+  //   console.log('重新访问购物车页面成功');
+  // } catch (e) {}
 
   timer(date, async () => {
     // let [isAvailable] = await checkItemState(skuId, params, 1);
@@ -249,6 +273,7 @@ async function submitOrderFromShoppingCart(date, skuId, params = {}) {
         num: 1,
       });
       console.log('库存信息:', stockInfo.stockState, stockInfo.isStock);
+      // if all sku is sold out, proces.exit
       process.exit();
     }
     i = 20;
@@ -338,20 +363,36 @@ async function submitOrderProcess(date, skuId, areaId, forceKO = false) {
     process.exit(1);
   }
   await helper.getLocalCookie(true);
-  let [isKO, params] = await getPageConfig(skuId, areaId);
-  if (!isKO && !forceKO) {
-    let m = 5;
+
+  const allSKUParam = {};
+  const skuIds = Array.isArray(skuId) ? skuId : [skuId];
+  const isKOSet = new Set()
+  if (!forceKO) {
     while (1) {
+      let m = 6
       if (Date.now() + m * 60 * 1000 >= date) {
-        [isKO, params] = await getPageConfig(skuId, areaId);
-        m--;
-        if (isKO || m <= 1) {
-          break;
-        }
+        skuIds.forEach(skuId => {
+          if(isKOSet.has(skuId)) return
+          const [isKO, params] = await getPageConfig(skuId, areaId);
+          allSKUParam[skuId] = params
+          if(isKO) {
+            isKOSet.add(skuId)
+          }
+          await new Promise(r=>setTimeout(r, 1000))
+        })
+      }
+      if (isKOSet.size === skuIds.length || m <= 1) {
+        break;
+      }
+      if(Date.now() >= date) {
+        break
       }
     }
   }
-  if (isKO || forceKO) {
+
+  const cartSkuIds = skuIds.filter(s => !isKOSet.has(s))
+  // Todo: this
+  if (isKOSet.size > 0 || forceKO) {
     console.log('当前流程是预约秒杀流程, 从详情页面直接提交订单的!');
     console.log('请留意窗口打印信息');
     submitOrderFromItemDetailPage(date, skuId, params);

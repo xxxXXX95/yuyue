@@ -20,44 +20,55 @@ if (!config.eid || !config.fp) {
 }
 
 if (cluster.isWorker) {
-  cluster.worker.once('message', item => {
-    if (item.type === 'loginWork') {
-      console.log('progress.worker login', process.pid);
-      if (item.forceLogin) {
-        console.warn(
-          '已开启强制扫码登录, 如果接下里24小时内频繁重启, 重启最好关闭了'
-        );
-      }
-      login(item.forceLogin).then(() => {
-        // 登陆完成后通知主进程
-        // 派生任务进程
-        cluster.worker.send('loginReady');
-      });
-    } else {
-      const { date, skuId, areaId = config.areaId, forceKO = false } = item;
-      // 任务进程
-      console.log(
-        'progress.worker:',
-        process.pid,
-        '时间:',
-        item.date,
-        'sku',
-        item.skuId
+  const setupLoginWork = () => {
+    console.log('progress.worker login', process.pid);
+    if (item.forceLogin) {
+      console.warn(
+        '已开启强制扫码登录, 如果接下里24小时内频繁重启, 重启最好关闭了'
       );
-      submitOrderProcess(date, skuId, areaId, forceKO);
+    }
+    login(item.forceLogin).then(() => {
+      // 登陆完成后通知主进程
+      // 派生任务进程
+      cluster.worker.send('loginReady');
+    });
+  };
+  const setupWork = item => {
+    const { date, skuId, areaId = config.areaId, forceKO = false } = item;
+    // 任务进程
+    console.log(
+      'progress.worker:',
+      process.pid,
+      '时间:',
+      item.date,
+      'sku',
+      item.skuId
+    );
+    submitOrderProcess(date, skuId, areaId, forceKO);
+  };
+
+  cluster.worker.on('message', async job => {
+    if (job.type === 'login') {
+      await setupLoginWork(job);
+      cluster.worker.send({ doneWork: 'login' });
+    }
+    if (job.type === 'task') {
+      setupWork(job);
     }
   });
 } else {
   // 使用独立进程登陆
   // forcelogin, 强制登陆一次
-  cluster.fork().send({ type: 'loginWork', forceLogin });
-  cluster.on('message', () => {
-    // 登陆完成后
-    for (i = 0; i < pool.length; i++) {
-      const item = pool[i];
-      cluster.fork().send(item);
+  cluster.fork().send({ type: 'login', forceLogin });
+  cluster.on('message', message => {
+    if (message.doneWork === 'login') {
+      // 登陆完成后
+      for (i = 0; i < pool.length; i++) {
+        const item = pool[i];
+        cluster.fork().send({ ...item, type: 'task' });
+      }
     }
   });
 
-  console.log('main progress');
+  console.log('progress.master:', process.id);
 }
