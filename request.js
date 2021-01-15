@@ -57,7 +57,7 @@ class Request {
         return res;
       })
       .catch(e => {
-        console.log('ERR:', url);
+        console.log('请求出错url:', url);
       });
   };
 }
