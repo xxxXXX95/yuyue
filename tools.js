@@ -378,12 +378,9 @@ class Tools {
   };
   getOrderData = async (skuId, retry = 10) => {
     while (retry--) {
-      // let data = null;
       try {
         console.info('生成提交抢购订单所需参数...', retry);
-        // self.seckill_init_info[self.sku_id] = self._get_seckill_init_info()
         const initInfo = await this.getInitInfo(skuId);
-        // if(initInfo)
         const defaultAddress = initInfo.addressList[0];
         const invoiceInfo = initInfo.invoiceInfo || {};
         const token = initInfo.token;

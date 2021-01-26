@@ -50,12 +50,15 @@ async function submitOrderFromItemDetailPage(
   params,
   concurrency = 20
 ) {
+  console.log('获取订单数据呢:', new Date().toLocaleString());
+  await helper.getOrderData(skuId);
   timer(date, async function () {
     console.log('执行获取链接时间:', new Date().toLocaleString());
     let res = await helper.getKOUrl(skuId);
     if (!res) {
       console.log('没有抢购链接, 抢购失败可能未开始');
       console.log('检查商品状态...');
+      // state = 3 等待抢购
       const [isAvailable, ms] = await checkItemState(skuId, params, 1);
       const endTime = Date.now() + ms;
       if (isAvailable) {
@@ -85,8 +88,6 @@ async function submitOrderFromItemDetailPage(
     if (!res) {
       return;
     }
-    console.log('getOrderData:', new Date().toLocaleString());
-    await helper.getOrderData(skuId);
     for (let i = 0; i <= concurrency; i++) {
       console.log(i, '抢购:', new Date().toLocaleString());
       helper.submitOrder(skuId).then(async r => {
@@ -96,6 +97,14 @@ async function submitOrderFromItemDetailPage(
           process.exit();
         }
         if (i === concurrency) {
+          console.log('抢购失败, 检查商品状态...');
+          const [_, ms] = await checkItemState(skuId, params, 1);
+          if (ms) {
+            console.log(
+              '商品抢购应该还没开始(有货), 请查看相关页面重新启动, 剩余(ms):',
+              ms
+            );
+          }
           await helper.sendToWechat('抢购失败');
           process.exit();
         }
@@ -386,6 +395,10 @@ async function submitOrderProcess(date, skuId, areaId, forceKO = false) {
       }
       if(Date.now() >= date) {
         break
+      }
+      m--
+      if (isKO || m <= 1) {
+        break;
       }
     }
   }
