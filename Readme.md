@@ -18,6 +18,10 @@
 5. 已知 `windows` 系统自带终端打印出来的二维码错位, 请更换终端或者手动打开自动生成的本目录下`qrcode.png`文件扫码
 6. 由`jd_by_mask` 改名 `jd_yuyue`.之前使用错别字防止搜索且买口罩也不符合现在仓库内容, 所以改名 yuyue 了
 
+TG Group  
+
+[来吧加入电报组😊](https://t.me/joinchat/I5uwLB2vr6pruLYG)
+
 ## Quick Start
 
 1 **`必须配置config文件`**, 在目录下新创建 `config.js` 文件。格式如下（可以直接复制过去填充内容）
