@@ -65,4 +65,27 @@ describe('isSkuInCart', function () {
     const res5 = await isSkuInCart('5');
     expect([res1, res2, res3, res4, res5]).toEqual([[], [], [], ['4'], []]);
   });
+
+  test('if cart is empty should return all skuIds', async () => {
+    fetch.mockImplementation(() => {
+      return Promise.resolve({
+        headers: {
+          raw: () => {
+            return {};
+          },
+        },
+        json() {
+          return {
+            success: true,
+            resultData: {
+              cartInfo: null,
+            },
+          };
+        },
+      });
+    });
+    const res1 = await isSkuInCart('1');
+    const res2 = await isSkuInCart(['1', '2', '3']);
+    expect([res1, res2, ]).toEqual([['1'], ['1', '2', '3']]);
+  });
 });

@@ -273,7 +273,7 @@ async function isSkuInCart(skuId, areaId) {
   if (res.success) {
     let allskus = [];
     const allIds = new Set();
-    if (!res.resultData.cartInfo) return false;
+    if (!res.resultData.cartInfo) return skuIds;
     res.resultData.cartInfo.vendors.forEach(v => {
       allskus = allskus.concat(v.sorted);
     });
@@ -288,7 +288,7 @@ async function isSkuInCart(skuId, areaId) {
     });
     return skuIds.filter(s => !allIds.has(s));
   }
-  return [];
+  return skuIds;
 }
 
 /**
