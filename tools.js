@@ -305,7 +305,7 @@ class Tools {
 
           console.log(`已经获取到抢购链接: ${seckillUrl}`, result.type);
           this.reserveUrl = seckillUrl;
-          let n = 10;
+          let n = 30;
           while (n--) {
             try {
               await Promise.race([
@@ -376,7 +376,7 @@ class Tools {
     return await res.json();
     // return this.parseJsonp(await res.text());
   };
-  getOrderData = async (skuId, retry = 10) => {
+  getOrderData = async (skuId, retry = 20) => {
     while (retry--) {
       try {
         console.info('生成提交抢购订单所需参数...', retry);
@@ -426,9 +426,9 @@ class Tools {
         this.initInfo = data;
         return data;
       } catch (e) {
-        console.error(e, 'get initInfo err');
+        console.error('获取订单地址等信息失败, 将重试');
       }
-      await new Promise(r => setTimeout(r, 500));
+      await new Promise(r => setTimeout(r, 100));
     }
   };
 
@@ -450,12 +450,12 @@ class Tools {
 
     // getOrderData 重试 getInitInfo
     // 其他是同步代码不会出错
-
-    // const data = await this.getOrderData(skuId);
-    const data = this.initInfo;
-
+    let data = this.initInfo;
     if (!data) {
-      console.log('null initInfo', data);
+      data = await this.getOrderData(skuId);
+    }
+    if (!data) {
+      console.log('未获取到订单详细信息', skuId);
       return;
     }
     let result = null;
@@ -482,14 +482,8 @@ class Tools {
       return result;
     } catch (e) {
       console.log(e);
-      //console.log('抢购失败, 马上重试', retry, result);
       return {};
     }
-    // await new Promise(r => setTimeout(r, 1000));
-    //}
-
-    // 失败了的推送
-    // this.sendToWechat(JSON.stringify(result));
   };
   sendToWechat = message => {
     if (!message) return;
@@ -503,7 +497,7 @@ class Tools {
   };
 
   // 访问sku 详情页面
-  requestItemDetailPage = skuId => {
+  requestItemDetailPage = async skuId => {
     const url = `https://item.jd.com/${skuId}.html`;
     return this.request(url, {
       'User-Agent': this.userAgent,
@@ -674,7 +668,7 @@ class Tools {
         referer: `https://cart.jd.com/`,
       },
     });
-    return res.json();
+    return await res.json();
   };
 }
 

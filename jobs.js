@@ -50,41 +50,11 @@ async function submitOrderFromItemDetailPage(
   params,
   concurrency = 20
 ) {
-  console.log('获取订单数据呢:', new Date().toLocaleString());
-  await helper.getOrderData(skuId);
+  console.log('尝试提前获取订单数据:', new Date().toLocaleString(), skuId);
+  await helper.getOrderData(skuId, 1);
   timer(date, async function () {
     console.log('执行获取链接时间:', new Date().toLocaleString());
     let res = await helper.getKOUrl(skuId);
-    if (!res) {
-      console.log('没有抢购链接, 抢购失败可能未开始');
-      console.log('检查商品状态...');
-      // state = 3 等待抢购
-      const [isAvailable, ms] = await checkItemState(skuId, params, 1);
-      const endTime = Date.now() + ms;
-      if (isAvailable) {
-        console.log(
-          '代码错误, 请联系我:https://github.com/meooxx/jd_yuyue/issues'
-        );
-      }
-      if (ms) {
-        // 大于1h
-        if (ms > 60 * 60 * 1000) {
-          console.log(
-            '抢购还有很长时间开始, 请修改时间重新启动, 剩余秒数:',
-            ms / 1000
-          );
-          process.exit();
-        }
-        console.log(ms / 1000, '秒后抢购开始, 继续在此等待..');
-        while (true) {
-          if (Date.now() >= endTime) {
-            break;
-          }
-        }
-        console.log('再次执行获取链接时间');
-        res = await helper.getKOUrl(skuId);
-      }
-    }
     if (!res) {
       return;
     }
@@ -178,69 +148,51 @@ async function checkItemState(skuId, params, retry = 30) {
  * @param {*} skuId
  * 从购物车提交订单
  */
-async function submitOrderFromShoppingCart(date, skuId, params = {}) {
-  const { area } = params;
-  let isInCart = await isSkuInCart(skuId, area);
-  // 先加到购物车
-  try {
-    const { stockInfo = {} } = await helper.getWareInfo({
-      skuId,
-      ...params,
-      num: 1,
-    });
-    console.log('库存信息:', stockInfo.stockState, '有货:', stockInfo.isStock);
-    if (stockInfo.isStock) {
-      if (!isInCart) {
-        console.log('准备提交购物车');
-        // 有货哦
-        const result = await helper.addItemToCart(skuId);
-        if (!result) {
-          console.log(
-            '!!!添加购物车请求成功, 但没响应购物车链接, 有可能是秒杀流程!!!'
-          );
-          console.log(
-            '请先手动设置taskPool中指定forceKO: true,指定使用秒杀流程'
-          );
-          process.exit();
+async function submitOrderFromShoppingCart(date, skuIds, params = {}, area) {
+  const notInCartIds = await isSkuInCart(skuIds, area);
+  const skuIdsSet = new Set(skuIds);
+  for (let i = 0; i < skuIds.length; i++) {
+    const skuId = skuIds[i];
+    try {
+      const { stockInfo = {} } = await helper.getWareInfo({
+        skuId,
+        ...params[skuId],
+        num: 1,
+      });
+      console.log(
+        skuId,
+        '库存信息:',
+        stockInfo.stockState,
+        '有货:',
+        stockInfo.isStock
+      );
+      if (stockInfo.isStock) {
+        const isInCart = notInCartIds.indexOf(skuId) === -1;
+        if (!isInCart) {
+          // 有货哦
+          const result = await helper.addItemToCart(skuId);
+          if (!result) {
+            skuIdsSet.delete(skuId);
+            console.log('添加购物车失败, skuId:', skuId);
+            return;
+          }
         }
-        // 已经跳转至购物车页面
-        // 当前sku 是套装商品, 已经在购物车页面了
-        console.log('添加成功,', result);
-        isInCart = true;
+      } else {
+        console.log('无库存, skuId:', skuId);
+        skuIdsSet.delete(skuId);
       }
-    } else {
-      console.log('商品无货, 请检查距离开抢日期前是否太久');
-      console.log('如果距离开抢时间太久, 有可能会更新库存');
-      console.log('请距离开抢日期稍近再启动脚本');
-      console.log('退出抢购商品sku:', skuId);
-      process.exit();
+    } catch (e) {
+      //
     }
-  } catch (e) {
-    // e
+    if (i < skuIds.length - 1) {
+      await new Promise(r => setTimeout(r, 1500));
+    }
   }
-  // let r = '';
-  // let quit = '';
-  // process.send({
-  //   doneWork: 'addCart',
-  //   next: r,
-  //   quit,
-  //   skuId,
-  // });
-  // try {
-  //   await new Promise((resolve, reject) => {
-  //     r = resolve;
-  //     quit = reject;
-  //   });
-  //   console.log('已经添加到购物车了, 后续任务交给专门提交订单的进程了');
-  // } catch (e) {
-  //   process.exit();
-  // }
-
-  // // 尝试访问购物车页面, 防止缺少某些cookie
-  // try {
-  //   await helper.requestCartPage(skuId);
-  //   console.log('重新访问购物车页面成功');
-  // } catch (e) {}
+  console.log('待抢购商品:', [...skuIdsSet]);
+  if (skuIdsSet.size === 0) {
+    console.log('没有可抢购的skuId');
+    process.exit(1);
+  }
 
   timer(date, async () => {
     // let [isAvailable] = await checkItemState(skuId, params, 1);
@@ -276,13 +228,6 @@ async function submitOrderFromShoppingCart(date, skuId, params = {}) {
     }
     if (!isAvailable) {
       console.log('访问结算页面彻底失败, 溜了');
-      const { stockInfo = {} } = await helper.getWareInfo({
-        skuId,
-        ...params,
-        num: 1,
-      });
-      console.log('库存信息:', stockInfo.stockState, stockInfo.isStock);
-      // if all sku is sold out, proces.exit
       process.exit();
     }
     i = 20;
@@ -290,16 +235,20 @@ async function submitOrderFromShoppingCart(date, skuId, params = {}) {
       try {
         const res = await helper.submitCartOrder();
         if (res.success) {
-          const text = `订单提交成功!订单号:${res.orderId}`;
+          const now = new Date();
+          const text = `订单提交成功!订单号:${
+            res.orderId
+          },时间:${now.toLocaleTimeString()}.${now.getMilliseconds()}`;
           console.log(text);
           await helper.sendToWechat(text);
           process.exit();
         } else {
           if (res.noStockSkuIds) {
-            if (res.noStockSkuIds.indexOf(skuId) !== -1) {
-              console.log(
-                `这些sku没有库存遛了:抢购的${skuId} in ${res.noStockSkuIds}`
-              );
+            res.noStockSkuIds.forEach(skuId => {
+              skuIdsSet.delete(skuId);
+            });
+            if (skuIdsSet.size === 0) {
+              console.log(`所有sku都没库存了`);
               return;
             }
           }
@@ -318,17 +267,28 @@ async function submitOrderFromShoppingCart(date, skuId, params = {}) {
  * 当前sku 是否在购物车中
  */
 async function isSkuInCart(skuId, areaId) {
+  const skuIds = Array.isArray(skuId) ? skuId : [skuId];
   // 获取购物车数据
   const res = await helper.getCartData(areaId);
   if (res.success) {
     let allskus = [];
+    const allIds = new Set();
     if (!res.resultData.cartInfo) return false;
     res.resultData.cartInfo.vendors.forEach(v => {
       allskus = allskus.concat(v.sorted);
     });
-    return !!allskus.find(s => s.item.Id == skuId);
+    allskus.forEach(s => {
+      if (s.items) {
+        s.items.forEach(i => {
+          allIds.add(String(i.item.Id));
+        });
+      } else {
+        allIds.add(String(s.item.Id));
+      }
+    });
+    return skuIds.filter(s => !allIds.has(s));
   }
-  return false;
+  return [];
 }
 
 /**
@@ -372,56 +332,63 @@ async function submitOrderProcess(date, skuId, areaId, forceKO = false) {
     process.exit(1);
   }
   await helper.getLocalCookie(true);
-
   const allSKUParam = {};
   const skuIds = Array.isArray(skuId) ? skuId : [skuId];
-  const isKOSet = new Set()
-  if (!forceKO) {
-    while (1) {
-      let m = 6
-      if (Date.now() + m * 60 * 1000 >= date) {
-        skuIds.forEach(skuId => {
-          if(isKOSet.has(skuId)) return
-          const [isKO, params] = await getPageConfig(skuId, areaId);
-          allSKUParam[skuId] = params
-          if(isKO) {
-            isKOSet.add(skuId)
-          }
-          await new Promise(r=>setTimeout(r, 1000))
-        })
+  const isKOSet = new Set();
+  while (1) {
+    let m = 6;
+    if (Date.now() + m * 60 * 1000 >= date) {
+      for (let i = 0; i < skuIds.length; i++) {
+        const skuId = skuIds[i];
+        if (isKOSet.has(skuId)) return;
+        const [isKO, params] = await getPageConfig(skuId, areaId);
+        allSKUParam[skuId] = params;
+        if (isKO || forceKO) {
+          isKOSet.add(skuId);
+        }
+        if (i < skuIds.length - 1) {
+          await new Promise(r => setTimeout(r, 1000));
+        }
       }
-      if (isKOSet.size === skuIds.length || m <= 1) {
-        break;
-      }
-      if(Date.now() >= date) {
-        break
-      }
-      m--
-      if (isKO || m <= 1) {
-        break;
-      }
+    }
+    if (Date.now() >= date || forceKO) {
+      break;
+    }
+    m--;
+    if (isKOSet.size === skuIds.length || m <= 1) {
+      // 所有sku都是秒杀商品或者开抢前一分钟没变化
+      break;
     }
   }
 
-  const cartSkuIds = skuIds.filter(s => !isKOSet.has(s))
-  // Todo: this
+  // 购物车商品
+  const cartSkuIds = skuIds.filter(s => !isKOSet.has(s));
   if (isKOSet.size > 0 || forceKO) {
     console.log('当前流程是预约秒杀流程, 从详情页面直接提交订单的!');
     console.log('请留意窗口打印信息');
-    submitOrderFromItemDetailPage(date, skuId, params);
+    const KOSkuIds = [...isKOSet];
+    const skuId = KOSkuIds.shift();
+    submitOrderFromItemDetailPage(date, skuId, allSKUParam[skuId]);
+    if (KOSkuIds.length > 0) {
+      process.send({
+        doneWork: 'forkKO',
+        items: KOSkuIds.map(skuId => ({
+          skuId,
+          date: date,
+          param: allSKUParam[skuId],
+          areaId,
+        })),
+      });
+    }
     return;
-  } else {
-    // const stock = await helper.getItemStock(skuId, area);
-    // const item = stock[skuId];
-    // StockState:
-    //  33 现货,
-    //  40 可配货
-    //  0,34 无货
-    //  36 采购中
-    submitOrderFromShoppingCart(date, skuId, params);
+  }
+  if (cartSkuIds.length > 0) {
+    submitOrderFromShoppingCart(date, cartSkuIds, allSKUParam, areaId);
   }
 }
 
 exports.login = login;
 exports.helper = helper;
 exports.submitOrderProcess = submitOrderProcess;
+exports.submitOrderFromItemDetailPage = submitOrderFromItemDetailPage;
+exports.isSkuInCart = isSkuInCart;
