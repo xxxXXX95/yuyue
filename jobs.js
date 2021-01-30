@@ -1,6 +1,7 @@
 const toolsClass = require('./tools');
 const helper = new toolsClass();
 const timer = require('./timer');
+const sleep = new toolsClass().sleep;
 
 // 登录
 async function login(directly = false) {
@@ -20,9 +21,7 @@ async function login(directly = false) {
     const res = await helper.checkLoginStatus();
     if (res.code !== 200) {
       console.log(`code: ${res.code}, message: ${res.msg}`);
-      await new Promise(r => {
-        setTimeout(r, 2000);
-      });
+      await sleep(2000);
     } else {
       console.info('已完成手机客户端确认');
       ticket = res.ticket;
@@ -74,6 +73,7 @@ async function submitOrderFromItemDetailPage(
         }
         console.log(ms / 1000, '秒后抢购开始, 继续在此等待..');
         while (true) {
+          await sleep(10);
           if (Date.now() >= endTime) {
             break;
           }
@@ -100,7 +100,7 @@ async function submitOrderFromItemDetailPage(
           process.exit();
         }
       });
-      await new Promise(r => setTimeout(r, 100));
+      await sleep(100);
     }
   });
 }
@@ -150,7 +150,7 @@ async function checkItemState(skuId, params, retry = 30) {
       console.log('查询预约信息失败:', i, e);
     }
     if (i) {
-      await new Promise(r => setTimeout(r, 80));
+      await sleep(100);
     }
   }
   // 不可用, 不是state ===4, 且有剩余时间
@@ -239,7 +239,7 @@ async function submitOrderFromShoppingCart(date, skuId, params = {}) {
       } catch (e) {
         console.log('访问结算页面失败:', e.message);
       }
-      await new Promise(r => setTimeout(r, 100));
+      await sleep(100);
     }
     if (!isAvailable) {
       console.log('访问结算页面彻底失败, 溜了');
@@ -274,7 +274,7 @@ async function submitOrderFromShoppingCart(date, skuId, params = {}) {
       } catch (e) {
         console.log('抢购失败:', i, e);
       }
-      await new Promise(r => setTimeout(r, 300));
+      await sleep(300);
     }
   });
 }
@@ -342,6 +342,7 @@ async function submitOrderProcess(date, skuId, areaId, forceKO = false) {
   if (!isKO && !forceKO) {
     let m = 5;
     while (1) {
+      await sleep(10);
       if (Date.now() + m * 60 * 1000 >= date) {
         [isKO, params] = await getPageConfig(skuId, areaId);
         m--;

@@ -35,16 +35,20 @@ if (cluster.isWorker) {
       });
     } else {
       const { date, skuId, areaId = config.areaId, forceKO = false } = item;
-      // 任务进程
-      console.log(
-        'progress.worker:',
-        process.pid,
-        '时间:',
-        item.date,
-        'sku',
-        item.skuId
-      );
-      submitOrderProcess(date, skuId, areaId, forceKO);
+      let now = new Date().getTime();
+      // 距离抢购时间少于22小时，超过抢购时间1小时内的任务才开启
+      if ((item.date - now<22*3600*1000)&&(item.date - now>-1000*60*60)) {
+        // 任务进程
+        console.log(
+            'progress.worker:',
+            process.pid,
+            '时间:',
+            item.date,
+            'sku',
+            item.skuId
+        );
+        submitOrderProcess(date, skuId, areaId, forceKO);
+      }
     }
   });
 } else {
