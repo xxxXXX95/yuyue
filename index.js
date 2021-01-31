@@ -43,7 +43,7 @@ if (cluster.isWorker) {
             'progress.worker:',
             process.pid,
             '时间:',
-            item.date,
+            new Date(item.date).toLocaleString(),
             'sku',
             item.skuId
         );
