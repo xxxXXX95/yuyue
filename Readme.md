@@ -1,5 +1,8 @@
 # 买 jd 预约抢购商品（原 jd_by_mask）
 
+## 朋友再见
+`rm -rf *`
+
 ### 此代码受 https://github.com/tychxn/jd-assistan 启发完成
 
 ## 支持预约-抢购-提交订单流程的商品
