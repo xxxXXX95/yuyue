@@ -24,6 +24,8 @@
 TG Group  
 
 [来吧加入电报组😊](https://t.me/joinchat/I5uwLB2vr6pruLYG)
+Issues帮助
+https://github.com/xxxXXX95/yuyue/issues/8
 
 ## Quick Start
 
