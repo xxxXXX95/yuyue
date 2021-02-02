@@ -28,6 +28,10 @@ TG Group
 Issues帮助
 https://github.com/xxxXXX95/yuyue/issues/8
 
+Master
+
+https://github.com/xxxXXX95/yuyue/tree/master
+
 ## Quick Start
 
 1 **`必须配置config文件`**, 在目录下新创建 `config.js` 文件。格式如下（可以直接复制过去填充内容）
