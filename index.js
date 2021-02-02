@@ -11,10 +11,7 @@ try {
   process.exit();
 }
 
-const {
-  login,
-  submitOrderProcess,
-} = require('./jobs');
+const { login, submitOrderProcess } = require('./jobs');
 const { pool, forceLogin } = require('./tasks-pool');
 const config = require('./config');
 if (!config.eid || !config.fp) {
