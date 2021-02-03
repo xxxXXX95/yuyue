@@ -290,6 +290,24 @@ async function isSkuInCart(skuId, areaId) {
   return skuIds;
 }
 
+async function pauseForPageConfig() {
+  return new Promise(resolve => {
+  });
+
+  for (let i = 0; i < skuIds.length; i++) {
+    const skuId = skuIds[i];
+    if (isKOSet.has(skuId)) return;
+    const [isKO, params] = await getPageConfig(skuId, areaId);
+    allSKUParam[skuId] = params;
+    if (isKO || forceKO) {
+      isKOSet.add(skuId);
+    }
+    if (i < skuIds.length - 1) {
+      await new Promise(r => setTimeout(r, 1000));
+    }
+  }
+}
+
 /**
  *
  * @param {*} skuId skuid
@@ -334,6 +352,13 @@ async function submitOrderProcess(date, skuId, areaId, forceKO = false) {
   const allSKUParam = {};
   const skuIds = Array.isArray(skuId) ? skuId : [skuId];
   const isKOSet = new Set();
+
+  const fn = () => {};
+
+  // 如果距离太目标时间太远的话, 不用很精准
+  // 可以用setInterval 或者 setTimeout来做
+  await pauseForPageConfig(skuIds);
+
   while (1) {
     let m = 6;
     if (Date.now() + m * 60 * 1000 >= date) {
