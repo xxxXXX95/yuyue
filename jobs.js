@@ -352,16 +352,19 @@ async function submitOrderProcess(date, skuId, areaId, forceKO = false) {
   const allSKUParam = {};
   const skuIds = Array.isArray(skuId) ? skuId : [skuId];
   const isKOSet = new Set();
-
-  const fn = () => {};
-
-  // 如果距离太目标时间太远的话, 不用很精准
-  // 可以用setInterval 或者 setTimeout来做
-  await pauseForPageConfig(skuIds);
-
+  const beforeRunTaskMinues = Math.round((date - Date.now()) / 1000 / 60) - 2;
+  // < 0, 0
+  // > 6, 6
+  // range 0-6
+  let m =
+    beforeRunTaskMinues < 2
+      ? 2
+      : beforeRunTaskMinues < 6
+      ? beforeRunTaskMinues
+      : 6;
   while (1) {
-    let m = 6;
-    if (Date.now() + m * 60 * 1000 >= date) {
+    const now = Date.now();
+    if (now + m * 60 * 1000 >= date) {
       for (let i = 0; i < skuIds.length; i++) {
         const skuId = skuIds[i];
         if (isKOSet.has(skuId)) return;
@@ -373,12 +376,12 @@ async function submitOrderProcess(date, skuId, areaId, forceKO = false) {
         if (i < skuIds.length - 1) {
           await new Promise(r => setTimeout(r, 1000));
         }
+        m--;
       }
     }
-    if (Date.now() >= date || forceKO) {
+    if (now >= date || forceKO) {
       break;
     }
-    m--;
     if (isKOSet.size === skuIds.length || m <= 1) {
       // 所有sku都是秒杀商品或者开抢前一分钟没变化
       break;
