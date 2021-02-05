@@ -11,10 +11,7 @@ try {
   process.exit();
 }
 
-const {
-  login,
-  submitOrderProcess,
-} = require('./jobs');
+const { login, submitOrderProcess } = require('./jobs');
 const { pool, forceLogin } = require('./tasks-pool');
 const config = require('./config');
 if (!config.eid || !config.fp) {
@@ -36,10 +33,10 @@ if (cluster.isWorker) {
     const { date, skuId, areaId = config.areaId, forceKO = false } = item;
     // 任务进程
     console.log(
-      'progress.worker:',
+      'process.worker:',
       process.pid,
       '时间:',
-      item.date,
+      new Date(item.date).toLocaleTimeString('en-US', { hour12: false }),
       'sku',
       item.skuId
     );
@@ -79,5 +76,5 @@ if (cluster.isWorker) {
     }
   });
 
-  console.log('progress.master:', process.pid);
+  console.log('process.master:', process.pid);
 }
