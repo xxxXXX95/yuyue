@@ -194,13 +194,10 @@ async function submitOrderFromShoppingCart(date, skuIds, params = {}, area) {
   }
 
   timer(date, async () => {
-    // let [isAvailable] = await checkItemState(skuId, params, 1);
-    // if (!isAvailable) {
-    //   console.log('哈哈又被耍猴了!');
-    //   process.exit();
-    // }
     let isAvailable = false;
-    let i = 30;
+    // 不要更改 7, 超过七很容易触发京东频率限制
+    let i = 7;
+    let loopTime = 0;
     while (i--) {
       try {
         await Promise.race([
@@ -221,15 +218,22 @@ async function submitOrderFromShoppingCart(date, skuIds, params = {}, area) {
         console.log('访问结算页面成功, 准备提交订单');
         break;
       } catch (e) {
-        console.log('访问结算页面失败:', e.message);
+        console.log('访问结算页面失败:', e.message || message);
       }
-      await sleep(100);
+      if (i === 0 && loopTime === 0) {
+        i = 7;
+        loopTime++;
+        await sleep(loopTime * 1000);
+      }
+      // loopTime 0: 50
+      // loopTime 1: 100
+      await sleep(loopTime * 50 + 50);
     }
     if (!isAvailable) {
       console.log('访问结算页面彻底失败, 溜了');
       process.exit();
     }
-    i = 20;
+    i = 10;
     while (i--) {
       try {
         const res = await helper.submitCartOrder();
@@ -237,7 +241,9 @@ async function submitOrderFromShoppingCart(date, skuIds, params = {}, area) {
           const now = new Date();
           const text = `订单提交成功!订单号:${
             res.orderId
-          },时间:${now.toLocaleTimeString()}.${now.getMilliseconds()}`;
+          },时间:${now.toLocaleTimeString('en-US', {
+            hour12: false,
+          })}.${now.getMilliseconds()}`;
           console.log(text);
           await helper.sendToWechat(text);
           process.exit();
@@ -256,7 +262,7 @@ async function submitOrderFromShoppingCart(date, skuIds, params = {}, area) {
       } catch (e) {
         console.log('抢购失败:', i, e);
       }
-      await sleep(300);
+      await sleep(650);
     }
   });
 }
@@ -288,24 +294,6 @@ async function isSkuInCart(skuId, areaId) {
     return skuIds.filter(s => !allIds.has(s));
   }
   return skuIds;
-}
-
-async function pauseForPageConfig() {
-  return new Promise(resolve => {
-  });
-
-  for (let i = 0; i < skuIds.length; i++) {
-    const skuId = skuIds[i];
-    if (isKOSet.has(skuId)) return;
-    const [isKO, params] = await getPageConfig(skuId, areaId);
-    allSKUParam[skuId] = params;
-    if (isKO || forceKO) {
-      isKOSet.add(skuId);
-    }
-    if (i < skuIds.length - 1) {
-      await new Promise(r => setTimeout(r, 1000));
-    }
-  }
 }
 
 /**
@@ -352,6 +340,7 @@ async function submitOrderProcess(date, skuId, areaId, forceKO = false) {
   const allSKUParam = {};
   const skuIds = Array.isArray(skuId) ? skuId : [skuId];
   const isKOSet = new Set();
+  const errorSet = new Set();
   const beforeRunTaskMinues = Math.round((date - Date.now()) / 1000 / 60) - 2;
   // < 0, 0
   // > 6, 6
@@ -362,34 +351,58 @@ async function submitOrderProcess(date, skuId, areaId, forceKO = false) {
       : beforeRunTaskMinues < 6
       ? beforeRunTaskMinues
       : 6;
-  while (1) {
-    const now = Date.now();
-    if (now + m * 60 * 1000 >= date) {
-      for (let i = 0; i < skuIds.length; i++) {
-        const skuId = skuIds[i];
+
+  if (m === 2) {
+    await Promise.all(
+      skuIds.map(skuId => {
         if (isKOSet.has(skuId)) return;
-        const [isKO, params] = await getPageConfig(skuId, areaId);
-        allSKUParam[skuId] = params;
-        if (isKO || forceKO) {
-          isKOSet.add(skuId);
+        return getPageConfig(skuId, areaId)
+          .then(([isKO, params]) => {
+            if (isKO || forceKO) {
+              isKOSet.add(skuId);
+            }
+            allSKUParam[skuId] = params;
+          })
+          .catch(_ => {
+            errorSet.add(skuId);
+            console.log(`${skuId},访问详情页出错`);
+          });
+      })
+    );
+  } else {
+    await new Promise(resolve => {
+      let id = setInterval(async () => {
+        const now = Date.now();
+        if (now + m * 60 * 1000 >= date) {
+          for (let i = 0; i < skuIds.length; i++) {
+            const skuId = skuIds[i];
+            if (isKOSet.has(skuId)) return;
+            const [isKO, params] = await getPageConfig(skuId, areaId);
+            allSKUParam[skuId] = params;
+            if (isKO || forceKO) {
+              isKOSet.add(skuId);
+            }
+            if (i < skuIds.length - 1) {
+              await new Promise(r => setTimeout(r, 1000));
+            }
+            m--;
+          }
         }
-        if (i < skuIds.length - 1) {
-          await new Promise(r => setTimeout(r, 1000));
+        if (now >= date || forceKO) {
+          clearInterval(id);
+          resolve();
         }
-        m--;
-      }
-    }
-    if (now >= date || forceKO) {
-      break;
-    }
-    if (isKOSet.size === skuIds.length || m <= 1) {
-      // 所有sku都是秒杀商品或者开抢前一分钟没变化
-      break;
-    }
+        if (isKOSet.size === skuIds.length || m <= 1) {
+          // 所有sku都是秒杀商品或者开抢前一分钟没变化
+          clearInterval(id);
+          resolve();
+        }
+      }, 10000);
+    });
   }
 
   // 购物车商品
-  const cartSkuIds = skuIds.filter(s => !isKOSet.has(s));
+  const cartSkuIds = skuIds.filter(s => !isKOSet.has(s) && !errorSet.has(s));
   if (isKOSet.size > 0 || forceKO) {
     console.log('当前流程是预约秒杀流程, 从详情页面直接提交订单的!');
     console.log('请留意窗口打印信息');

@@ -2,7 +2,6 @@ const cluster = require('cluster');
 const path = require('path');
 const filePath = path.join(__dirname, 'config.js');
 const fs = require('fs');
-const childProcess = require('child_process');
 
 try {
   fs.accessSync(filePath, fs.constants.F_OK);
@@ -37,7 +36,7 @@ if (cluster.isWorker) {
       'process.worker:',
       process.pid,
       '时间:',
-      item.date,
+      new Date(item.date).toLocaleTimeString('en-US', { hour12: false }),
       'sku',
       item.skuId
     );
@@ -58,9 +57,7 @@ if (cluster.isWorker) {
 } else {
   // 使用独立进程登陆
   // forcelogin, 强制登陆一次
-  // cluster.fork().send({ type: 'login', forceLogin });
-  const timeProcess = childProcess.fork(path.resolve(__dirname, 'timeTick'));
-
+  cluster.fork().send({ type: 'login', forceLogin });
   cluster.on('message', (_, message) => {
     // 登陆流程
     if (message.doneWork === 'login') {
