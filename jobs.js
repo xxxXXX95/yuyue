@@ -249,8 +249,10 @@ async function submitOrderFromShoppingCart(date, skuIds, params = {}, area) {
           process.exit();
         } else {
           if (res.noStockSkuIds) {
-            res.noStockSkuIds.forEach(skuId => {
-              skuIdsSet.delete(skuId);
+            skuIdsSet.forEach(skuId => {
+              if (res.noStockSkuIds.indexOf(skuId) !== -1) {
+                skuIdsSet.delete(skuId);
+              }
             });
             if (skuIdsSet.size === 0) {
               console.log(`所有sku都没库存了`);

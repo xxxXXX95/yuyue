@@ -21,6 +21,7 @@ module.exports = async (d, fn, im = false) => {
     getDiffTime(),
     getDiffTime(),
     getDiffTime(),
+    getDiffTime(),
   ]);
   console.log(
     '多次请求中最快的一次与服务器时间差(根据这个值设置提前多少ms开始),',
