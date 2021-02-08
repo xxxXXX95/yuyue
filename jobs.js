@@ -218,7 +218,7 @@ async function submitOrderFromShoppingCart(date, skuIds, params = {}, area) {
         console.log('访问结算页面成功, 准备提交订单');
         break;
       } catch (e) {
-        console.log('访问结算页面失败:', e.message || message);
+        console.log('访问结算页面失败:', e.message || e);
       }
       if (i === 0 && loopTime === 0) {
         i = 7;
