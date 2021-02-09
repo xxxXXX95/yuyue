@@ -3,6 +3,18 @@
 ## 朋友再见
 `rm -rf *`
 
+TG Group  
+
+[来吧加入电报组😊](https://t.me/joinchat/I5uwLB2vr6pruLYG)  
+
+Issues帮助
+https://github.com/xxxXXX95/yuyue/issues/8
+
+Master
+
+https://github.com/xxxXXX95/yuyue/tree/master
+
+
 ### 此代码受 https://github.com/tychxn/jd-assistan 启发完成
 
 ## 支持预约-抢购-提交订单流程的商品
@@ -21,16 +33,6 @@
 5. 已知 `windows` 系统自带终端打印出来的二维码错位, 请更换终端或者手动打开自动生成的本目录下`qrcode.png`文件扫码
 6. 由`jd_by_mask` 改名 `jd_yuyue`.之前使用错别字防止搜索且买口罩也不符合现在仓库内容, 所以改名 yuyue 了
 
-TG Group  
-
-[来吧加入电报组😊](https://t.me/joinchat/I5uwLB2vr6pruLYG)  
-
-Issues帮助
-https://github.com/xxxXXX95/yuyue/issues/8
-
-Master
-
-https://github.com/xxxXXX95/yuyue/tree/master
 
 ## Quick Start
 
