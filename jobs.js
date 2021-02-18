@@ -193,11 +193,12 @@ async function submitOrderFromShoppingCart(date, skuIds, params = {}, area) {
     process.exit(1);
   }
 
-  timer(date, async () => {
+  await timer(date, async () => {
     let isAvailable = false;
     // 不要更改 7, 超过七很容易触发京东频率限制
     let i = 7;
     let loopTime = 0;
+    const checkoutPageTime = new Date();
     while (i--) {
       try {
         await Promise.race([
@@ -231,9 +232,15 @@ async function submitOrderFromShoppingCart(date, skuIds, params = {}, area) {
     }
     if (!isAvailable) {
       console.log('访问结算页面彻底失败, 溜了');
+      console.log(
+        `访问订单结算时间:${checkoutPageTime.toLocaleTimeString('en-US', {
+          hour12: false,
+        })}.${now.getMilliseconds()}`
+      );
       process.exit();
     }
     i = 10;
+    const submitOrderTime = new Date();
     while (i--) {
       try {
         const res = await helper.submitCartOrder();
@@ -264,8 +271,13 @@ async function submitOrderFromShoppingCart(date, skuIds, params = {}, area) {
       } catch (e) {
         console.log('抢购失败:', i, e);
       }
-      await sleep(650);
+      await sleep(1000);
     }
+    console.log(
+      `提交订单开始时间:${submitOrderTime.toLocaleTimeString('en-US', {
+        hour12: false,
+      })}.${now.getMilliseconds()}`
+    );
   });
 }
 /**

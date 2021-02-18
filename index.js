@@ -2,7 +2,6 @@ const cluster = require('cluster');
 const path = require('path');
 const filePath = path.join(__dirname, 'config.js');
 const fs = require('fs');
-
 try {
   fs.accessSync(filePath, fs.constants.F_OK);
 } catch (e) {
@@ -55,6 +54,7 @@ if (cluster.isWorker) {
     }
   });
 } else {
+  require('./codeInfo');
   // 使用独立进程登陆
   // forcelogin, 强制登陆一次
   cluster.fork().send({ type: 'login', forceLogin });
