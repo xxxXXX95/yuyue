@@ -1,6 +1,17 @@
 # 买 jd 预约抢购商品（原 jd_by_mask）
 
 ### 此代码受 https://github.com/tychxn/jd-assistan 启发完成
+TG Group  
+
+[来吧加入电报组😊](https://t.me/joinchat/I5uwLB2vr6pruLYG)  
+
+Issues帮助
+https://github.com/xxxXXX95/yuyue/issues/8
+
+Master
+
+https://github.com/xxxXXX95/yuyue/tree/master
+
 
 ## 支持预约-抢购-提交订单流程的商品
 
