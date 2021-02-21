@@ -32,6 +32,10 @@ class Tools {
     // this.reqTools.Cookie.fromJSON()
   }
 
+  sleep(time) {
+    return new Promise(resolve => setTimeout(resolve, time));
+  }
+
   getLoginStatus = async () => {
     if (this.isLogin) return true;
     else {

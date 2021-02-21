@@ -1,0 +1,24 @@
+<html>
+  <head></head>
+  <body>
+    <div id="info">获取中……</div>
+    <hr />
+    <div id="eid"></div>
+    <div id="fp"></div>
+  </body>
+</html>
+
+<script src="https://gias.jd.com/js/td.js"></script>
+
+<script>
+  try {
+    getJdEid(function (eid, fp, udfp) {
+      document.getElementById('info').innerText =
+        '请把下面的内容复制到配置文件 config.js 中的对应位置';
+      document.getElementById('eid').innerText = 'eid = ' + eid;
+      document.getElementById('fp').innerText = 'fp = ' + fp;
+    });
+  } catch (e) {
+    document.getElementById('info').innerText = e;
+  }
+</script>

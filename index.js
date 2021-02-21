@@ -2,7 +2,6 @@ const cluster = require('cluster');
 const path = require('path');
 const filePath = path.join(__dirname, 'config.js');
 const fs = require('fs');
-
 try {
   fs.accessSync(filePath, fs.constants.F_OK);
 } catch (e) {
@@ -11,10 +10,7 @@ try {
   process.exit();
 }
 
-const {
-  login,
-  submitOrderProcess,
-} = require('./jobs');
+const { login, submitOrderProcess } = require('./jobs');
 const { pool, forceLogin } = require('./tasks-pool');
 const config = require('./config');
 if (!config.eid || !config.fp) {
@@ -34,12 +30,15 @@ if (cluster.isWorker) {
   };
   const setupWork = item => {
     const { date, skuId, areaId = config.areaId, forceKO = false } = item;
+    const expectedDate = new Date(item.date);
     // 任务进程
     console.log(
-      'progress.worker:',
+      'process.worker:',
       process.pid,
       '时间:',
-      item.date,
+      `${expectedDate.toLocaleString('en-US', {
+        hour12: false,
+      })}.${expectedDate.getMilliseconds()}`,
       'sku',
       item.skuId
     );
@@ -58,6 +57,7 @@ if (cluster.isWorker) {
     }
   });
 } else {
+  require('./codeInfo');
   // 使用独立进程登陆
   // forcelogin, 强制登陆一次
   cluster.fork().send({ type: 'login', forceLogin });
@@ -79,5 +79,5 @@ if (cluster.isWorker) {
     }
   });
 
-  console.log('progress.master:', process.pid);
+  console.log('process.master:', process.pid);
 }
