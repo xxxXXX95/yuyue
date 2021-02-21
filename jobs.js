@@ -297,8 +297,8 @@ async function isSkuInCart(skuId, areaId) {
       allskus = allskus.concat(v.sorted);
     });
     allskus.forEach(s => {
-      if (s.items) {
-        s.items.forEach(i => {
+      if (s.item && s.item.items) {
+        s.item.items.forEach(i => {
           allIds.add(String(i.item.Id));
         });
       } else {
@@ -369,7 +369,6 @@ async function submitOrderProcess(date, skuId, areaId, forceKO = false) {
   if (m === 2) {
     await Promise.all(
       skuIds.map(skuId => {
-        if (isKOSet.has(skuId)) return;
         return getPageConfig(skuId, areaId)
           .then(([isKO, params]) => {
             if (isKO || forceKO) {

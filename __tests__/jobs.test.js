@@ -32,13 +32,16 @@ describe('isSkuInCart', function () {
                         },
                       },
                       {
-                        items: [
-                          {
-                            item: {
-                              Id: 3,
+                        item: {
+                          Id: 44,
+                          items: [
+                            {
+                              item: {
+                                Id: 3,
+                              },
                             },
-                          },
-                        ],
+                          ],
+                        },
                       },
                     ],
                   },
@@ -86,6 +89,6 @@ describe('isSkuInCart', function () {
     });
     const res1 = await isSkuInCart('1');
     const res2 = await isSkuInCart(['1', '2', '3']);
-    expect([res1, res2, ]).toEqual([['1'], ['1', '2', '3']]);
+    expect([res1, res2]).toEqual([['1'], ['1', '2', '3']]);
   });
 });

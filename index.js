@@ -30,12 +30,15 @@ if (cluster.isWorker) {
   };
   const setupWork = item => {
     const { date, skuId, areaId = config.areaId, forceKO = false } = item;
+    const expectedDate = new Date(item.date);
     // 任务进程
     console.log(
       'process.worker:',
       process.pid,
       '时间:',
-      new Date(item.date).toLocaleTimeString('en-US', { hour12: false }),
+      `${expectedDate.toLocaleString('en-US', {
+        hour12: false,
+      })}.${expectedDate.getMilliseconds()}`,
       'sku',
       item.skuId
     );
