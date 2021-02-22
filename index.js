@@ -57,13 +57,13 @@ if (cluster.isWorker) {
     }
   });
 } else {
-  require('./codeInfo');
   // 使用独立进程登陆
   // forcelogin, 强制登陆一次
   cluster.fork().send({ type: 'login', forceLogin });
   cluster.on('message', (_, message) => {
     // 登陆流程
     if (message.doneWork === 'login') {
+      require('./codeInfo');
       // 登陆完成后
       for (i = 0; i < pool.length; i++) {
         const item = pool[i];
