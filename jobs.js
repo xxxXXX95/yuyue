@@ -235,7 +235,7 @@ async function submitOrderFromShoppingCart(date, skuIds, params = {}, area) {
       console.log(
         `访问订单结算时间:${checkoutPageTime.toLocaleTimeString('en-US', {
           hour12: false,
-        })}.${now.getMilliseconds()}`
+        })}.${checkoutPageTime.getMilliseconds()}`
       );
       process.exit();
     }
@@ -276,7 +276,7 @@ async function submitOrderFromShoppingCart(date, skuIds, params = {}, area) {
     console.log(
       `提交订单开始时间:${submitOrderTime.toLocaleTimeString('en-US', {
         hour12: false,
-      })}.${now.getMilliseconds()}`
+      })}.${submitOrderTime.getMilliseconds()}`
     );
   });
 }
