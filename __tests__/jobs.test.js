@@ -52,6 +52,12 @@ describe('isSkuInCart', function () {
                           Id: 5,
                         },
                       },
+                      {
+                        item: {
+                          Id: 6,
+                        },
+                        items: [],
+                      },
                     ],
                   },
                 ],
@@ -67,6 +73,10 @@ describe('isSkuInCart', function () {
     const res4 = await isSkuInCart('4');
     const res5 = await isSkuInCart('5');
     expect([res1, res2, res3, res4, res5]).toEqual([[], [], [], ['4'], []]);
+    const res6 = await isSkuInCart('6');
+    const res7 = await isSkuInCart('44');
+    expect(res6).toEqual([]);
+    expect(res7).toEqual([]);
   });
 
   test('if cart is empty should return all skuIds', async () => {

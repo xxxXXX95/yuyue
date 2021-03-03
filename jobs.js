@@ -301,9 +301,8 @@ async function isSkuInCart(skuId, areaId) {
         s.item.items.forEach(i => {
           allIds.add(String(i.item.Id));
         });
-      } else {
-        allIds.add(String(s.item.Id));
       }
+      allIds.add(String(s.item.Id));
     });
     return skuIds.filter(s => !allIds.has(s));
   }

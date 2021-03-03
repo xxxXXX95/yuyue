@@ -7,3 +7,4 @@ qrcode.png
 .vscode
 config.go.json
 test.js
+coverage
