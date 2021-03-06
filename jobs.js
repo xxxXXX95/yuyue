@@ -1,7 +1,9 @@
+const dayjs = require('./dayjs.min.js');
 const ToolsClass = require('./tools');
-const helper = new ToolsClass();
 const timer = require('./timer');
-const sleep = helper.sleep;
+
+const helper = new ToolsClass();
+const { sleep } = helper;
 
 // 登录
 async function login(directly = false) {
@@ -33,7 +35,8 @@ async function login(directly = false) {
   }
   const res = await helper.validateQRTicket(ticket);
   if (res.returnCode != 0) {
-    return console.log('二维码校验失败');
+    console.log('二维码校验失败');
+    return;
   }
   console.info('二维码登录成功');
   helper.isLogin = true;
@@ -51,9 +54,9 @@ async function submitOrderFromItemDetailPage(
 ) {
   console.log('尝试提前获取订单数据:', new Date().toLocaleString(), skuId);
   await helper.getOrderData(skuId, 1);
-  timer(date, async function () {
+  timer(date, async () => {
     console.log('执行获取链接时间:', new Date().toLocaleString());
-    let res = await helper.getKOUrl(skuId);
+    const res = await helper.getKOUrl(skuId);
     if (!res) {
       return;
     }
@@ -84,7 +87,10 @@ async function submitOrderFromItemDetailPage(
 }
 // 检查当前商品是否开卖了?
 async function checkItemState(skuId, params, retry = 30) {
-  const { area, cat, shopId, venderId, paramJson } = params;
+  const {
+    area, cat, shopId, venderId, paramJson
+  } = params;
+
   let i = retry;
   let isAvailable = false;
 
@@ -108,8 +114,7 @@ async function checkItemState(skuId, params, retry = 30) {
       // type 5 plus 专用
       // state === 4 抢购, 此时可以添加购物车
       const { yuyueInfo = {}, stockInfo = {} } = yuyue;
-      const isStock =
-        [33, 40].includes(stockInfo.stockState) && stockInfo.isStock;
+      const isStock = [33, 40].includes(stockInfo.stockState) && stockInfo.isStock;
       if (yuyueInfo.state == '4' && isStock) {
         isAvailable = true;
         break;
@@ -147,7 +152,14 @@ async function checkItemState(skuId, params, retry = 30) {
  * @param {*} skuId
  * 从购物车提交订单
  */
-async function submitOrderFromShoppingCart(date, skuIds, params = {}, area) {
+async function submitOrderFromShoppingCart(
+  date,
+  skuIds,
+  params = {},
+  area,
+  submitTimes,
+  maxWaitingMS
+) {
   const notInCartIds = await isSkuInCart(skuIds, area);
   const skuIdsSet = new Set(skuIds);
   for (let i = 0; i < skuIds.length; i++) {
@@ -191,14 +203,18 @@ async function submitOrderFromShoppingCart(date, skuIds, params = {}, area) {
   if (skuIdsSet.size === 0) {
     console.log('没有可抢购的skuId');
     process.exit(1);
+  } else if (skuIdsSet.size > 1) {
+    console.log('发现你添加了多个商品, 如果其中一个无货则整个订单会提交失败');
+    console.log('此流程一次最好抢购一个容易成功哦(也不可同一账号多开), 可以多账号多开');
   }
 
   await timer(date, async () => {
     let isAvailable = false;
-    // 不要更改 7, 超过七很容易触发京东频率限制
+    // !!不要更改大于 7, 超过七会触发京东频率限制!!
     let i = 7;
     let loopTime = 0;
     const checkoutPageTime = new Date();
+    const waitCheckoutPageDone = maxWaitingMS || 800;
     while (i--) {
       try {
         await Promise.race([
@@ -211,9 +227,7 @@ async function submitOrderFromShoppingCart(date, skuIds, params = {}, area) {
               );
             }
           }),
-          new Promise((_, r) =>
-            setTimeout(r, 500, '请求结算页面超过500ms, 准备重试')
-          ),
+          new Promise((_, r) => setTimeout(r, waitCheckoutPageDone, `请求结算页面超过${waitCheckoutPageDone}ms, 准备重试`)),
         ]);
         isAvailable = true;
         console.log('访问结算页面成功, 准备提交订单');
@@ -233,24 +247,19 @@ async function submitOrderFromShoppingCart(date, skuIds, params = {}, area) {
     if (!isAvailable) {
       console.log('访问结算页面彻底失败, 溜了');
       console.log(
-        `访问订单结算时间:${checkoutPageTime.toLocaleTimeString('en-US', {
-          hour12: false,
-        })}.${checkoutPageTime.getMilliseconds()}`
+        `访问订单结算时间:${dayjs(checkoutPageTime).format('YYYY-MM-DD HH:mm:ss.SSS')}`
       );
       process.exit();
     }
-    i = 10;
+    i = submitTimes || 10;
     const submitOrderTime = new Date();
     while (i--) {
       try {
         const res = await helper.submitCartOrder();
         if (res.success) {
           const now = new Date();
-          const text = `订单提交成功!订单号:${
-            res.orderId
-          },时间:${now.toLocaleTimeString('en-US', {
-            hour12: false,
-          })}.${now.getMilliseconds()}`;
+          const text = `订单提交成功!订单号:${res.orderId
+          },时间:${dayjs(now).format('YYYY-MM-DD HH:mm:ss.SSS')}`;
           console.log(text);
           await helper.sendToWechat(text);
           process.exit();
@@ -262,7 +271,7 @@ async function submitOrderFromShoppingCart(date, skuIds, params = {}, area) {
               }
             });
             if (skuIdsSet.size === 0) {
-              console.log(`所有sku都没库存了`);
+              console.log('所有sku都没库存了');
               return;
             }
           }
@@ -274,9 +283,7 @@ async function submitOrderFromShoppingCart(date, skuIds, params = {}, area) {
       await sleep(1000);
     }
     console.log(
-      `提交订单开始时间:${submitOrderTime.toLocaleTimeString('en-US', {
-        hour12: false,
-      })}.${submitOrderTime.getMilliseconds()}`
+      `提交订单开始时间:${dayjs(submitOrderTime).format('YYYY-MM-DD HH:mm:ss.SSS')}`
     );
   });
 }
@@ -336,11 +343,25 @@ async function getPageConfig(skuId, areaId) {
   const specialAttrs = JSON.parse(text.match(/specialAttrs:(.*?]),/i)[1]);
   // 秒杀则是从 item 详情页面直接提交订单
   const isKO = specialAttrs.indexOf('isKO') !== -1;
-  return [isKO, { cat, venderId, shopId, paramJson, area }];
+  return [
+    isKO,
+    {
+      cat,
+      venderId,
+      shopId,
+      paramJson,
+      area,
+    },
+  ];
 }
 
 // 提交订单, 此流程对应从购物车提交订单流程
-async function submitOrderProcess(date, skuId, areaId, forceKO = false) {
+async function submitOrderProcess(
+  date,
+  skuId,
+  areaId,
+  { forceKO = false, submitTimes, maxWaitingMS }
+) {
   if (!areaId) {
     console.log('no areaId!请确认填写了正确到areaId');
     process.exit(1);
@@ -358,33 +379,38 @@ async function submitOrderProcess(date, skuId, areaId, forceKO = false) {
   // < 0, 0
   // > 6, 6
   // range 0-6
-  let m =
-    beforeRunTaskMinues < 2
-      ? 2
-      : beforeRunTaskMinues < 6
+  let m = beforeRunTaskMinues < 2
+    ? 2
+    : beforeRunTaskMinues < 6
       ? beforeRunTaskMinues
       : 6;
 
   if (m === 2) {
     await Promise.all(
-      skuIds.map(skuId => {
-        return getPageConfig(skuId, areaId)
-          .then(([isKO, params]) => {
-            if (isKO || forceKO) {
-              isKOSet.add(skuId);
-            }
-            allSKUParam[skuId] = params;
-          })
-          .catch(_ => {
-            errorSet.add(skuId);
-            console.log(`${skuId},访问详情页出错`);
-          });
-      })
+      skuIds.map(skuId => getPageConfig(skuId, areaId)
+        .then(([isKO, params]) => {
+          if (isKO || forceKO) {
+            isKOSet.add(skuId);
+          }
+          allSKUParam[skuId] = params;
+        })
+        .catch(_ => {
+          errorSet.add(skuId);
+          console.log(`${skuId},访问详情页出错`);
+        }))
     );
   } else {
     await new Promise(resolve => {
-      let id = setInterval(async () => {
+      let printPoints = false;
+      const id = setInterval(async () => {
         const now = Date.now();
+        printPoints = !printPoints;
+        process.stdout.write('\r\x1b[K');
+        process.stdout.write('当前时间:');
+        process.stdout.write(dayjs(now).format('YYYY-MM-DD HH:mm:ss.SSS'));
+        if (printPoints) {
+          process.stdout.write('...');
+        }
         if (now + m * 60 * 1000 >= date) {
           for (let i = 0; i < skuIds.length; i++) {
             const skuId = skuIds[i];
@@ -426,7 +452,7 @@ async function submitOrderProcess(date, skuId, areaId, forceKO = false) {
         doneWork: 'forkKO',
         items: KOSkuIds.map(skuId => ({
           skuId,
-          date: date,
+          date,
           param: allSKUParam[skuId],
           areaId,
         })),
@@ -435,7 +461,7 @@ async function submitOrderProcess(date, skuId, areaId, forceKO = false) {
     return;
   }
   if (cartSkuIds.length > 0) {
-    submitOrderFromShoppingCart(date, cartSkuIds, allSKUParam, areaId);
+    submitOrderFromShoppingCart(date, cartSkuIds, allSKUParam, areaId, submitTimes, maxWaitingMS);
   }
 }
 
