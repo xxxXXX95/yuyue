@@ -160,16 +160,26 @@ async function submitOrderFromShoppingCart(
   submitTimes,
   maxWaitingMS
 ) {
+  try {
+    // 尝试取cookie
+    await helper.requestCartPage();
+  } catch (e) {
+    console.log('访问购物车页面出错');
+  }
   const notInCartIds = await isSkuInCart(skuIds, area);
   const skuIdsSet = new Set(skuIds);
   for (let i = 0; i < skuIds.length; i++) {
     const skuId = skuIds[i];
     try {
-      const { stockInfo = {} } = await helper.getWareInfo({
+      const { stockInfo = {}, yuyueInfo = {} } = await helper.getWareInfo({
         skuId,
         ...params[skuId],
         num: 1,
       });
+      if (yuyueInfo && yuyueInfo.yuyue) {
+        // eslint-disable-next-line no-param-reassign
+        params[skuId].yuyue = true;
+      }
       console.log(
         skuId,
         '库存信息:',
@@ -208,7 +218,33 @@ async function submitOrderFromShoppingCart(
     console.log('此流程一次最好抢购一个容易成功哦(也不可同一账号多开), 可以多账号多开');
   }
 
+  let skuData = [];
+  const isYuyue = params.yuyue;
+  if (isYuyue) {
+    try {
+      const data = await getSkusData(skuIds, area);
+      skuData = [...skuIdsSet].map(s => data.get(s));
+      if (skuData.length === 0) {
+        throw Error('空的购物车数据');
+      }
+    } catch (e) {
+      console.log('获取购物车数据失败');
+      process.exit();
+    }
+  }
+
   await timer(date, async () => {
+    if (isYuyue) {
+      const d = Date.now();
+      const validIds = [...skuIdsSet];
+      const [success] = await helper.checkSkus(skuData, validIds, area);
+      console.log(`使用${Date.now() - d}ms, 已勾选${validIds}`);
+      if (!success) {
+        console.log('勾选失败');
+        process.exit();
+      }
+    }
+
     let isAvailable = false;
     // !!不要更改大于 7, 超过七会触发京东频率限制!!
     let i = 7;
@@ -318,6 +354,37 @@ async function isSkuInCart(skuId, areaId) {
 
 /**
  *
+ * @param {*} skuId
+ * @param {*} areadId
+ * 购物车中sku的数据
+ */
+async function getSkusData(skuId, areaId) {
+  const skuIds = Array.isArray(skuId) ? skuId : [skuId];
+  // 获取购物车数据
+  const res = await helper.getCartData(areaId);
+  const data = new Map();
+
+  if (res.success) {
+    let allskus = [];
+    if (!res.resultData.cartInfo) return skuIds;
+    res.resultData.cartInfo.vendors.forEach(v => {
+      allskus = allskus.concat(v.sorted);
+    });
+    allskus.forEach(s => {
+      if (s.item && s.item.items) {
+        s.item.items.forEach(i => {
+          data.set(String(i.item.Id), i);
+        });
+      }
+      data.set(String(s.item.Id), s);
+    });
+    return data;
+  }
+  return data;
+}
+
+/**
+ *
  * @param {*} skuId skuid
  * @param {*} areaId areaId
  * @returns {array} [isKO, {cat, area,...}]
@@ -406,7 +473,6 @@ async function submitOrderProcess(
         const now = Date.now();
         printPoints = !printPoints;
         process.stdout.write('\r\x1b[K');
-        process.stdout.write('当前时间:');
         process.stdout.write(dayjs(now).format('YYYY-MM-DD HH:mm:ss.SSS'));
         if (printPoints) {
           process.stdout.write('...');

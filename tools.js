@@ -333,7 +333,9 @@ class Tools {
         console.log(result, ',重试获取抢购链接');
         // 直接重试
         await new Promise(r => setTimeout(r, 100));
-      } catch (e) {}
+      } catch (e) {
+        //
+      }
     }
     console.log('没获取到抢购链接, 退出了');
     return '';
@@ -645,7 +647,7 @@ class Tools {
   };
 
   // 获取购物车数据接口
-  getCartData = async area => {
+  getCartData = async (area) => {
     const origin = 'https://api.m.jd.com';
     const cookies = await this.reqTools.getCookies(origin);
     const item = cookies.find(c => c.key === 'user-key') || {};
@@ -674,6 +676,187 @@ class Tools {
     });
     return await res.json();
   };
+
+  // 选中sku
+  checkSkus = async (skus, ids = [], area) => {
+    const p = {
+      ThePacks: [],
+      TheSkus: [],
+      carttype: "5"
+    }
+    // 业务逻辑复制自官网
+    const suitParam = (e) => {
+      var t, a = e.itemType, n = e.item.Id, r = e.item.Num, c = e.item.SType, i = e.item.items[0], s = i.item.Num;
+      16 === c && 0 !== e.item.items.length && (c = 13);
+      var o = e.item.items.map((function (e) {
+        return {
+          Id: e.item.Id,
+          num: e.item.Num,
+          skuUuid: e.item.skuUuid,
+          useUuid: e.item.useUuid
+        }
+      }
+      ));
+      switch (a) {
+        case 4:
+          return {
+            Id: n,
+            num: r,
+            sType: c,
+            TheSkus: o
+          };
+        case 9:
+          return 4 == i.itemType ? (t = 12 == a ? 29 : 24,
+            o = [{
+              Id: i.item.Id,
+              num: s,
+              sType: t
+            }]) : o = [{
+              Id: i.item.Id,
+              num: s
+            }],
+          {
+            Id: n,
+            num: r,
+            sType: c,
+            TheSkus: o
+          };
+        case 12:
+          return 4 == i.itemType ? (t = 12 == a ? 29 : 24,
+            o = [{
+              Id: i.item.Id,
+              num: s,
+              sType: t
+            }]) : o = [{
+              Id: i.item.Id,
+              num: s
+            }],
+          {
+            Id: n,
+            num: r,
+            sType: c,
+            TheSkus: o
+          }
+      }
+    }
+    // 业务逻辑复制自官网
+    const combineParam = (e, t) => {
+      var a = e.SType;
+      return 16 == a && (a = 13),
+      {
+        num: e.Num,
+        sType: a,
+        Id: e.Id,
+        TheSkus: [{
+          num: t.Num,
+          Id: t.Id,
+          skuUuid: t.skuUuid,
+          useUuid: t.useUuid
+        }]
+      }
+    }
+
+
+    skus.forEach(e => {
+      switch (e.itemType) {
+        case 1: {
+          const item = e.item
+          const param = {
+            Id: item.Id,
+            num: item.Num,
+            skuUuid: item.skuUuid,
+            useUuid: item.useUuid
+          }
+          p.TheSkus.push(param);
+          break
+        }
+        case 4: {
+          const c = suitParam(e);
+          p.ThePacks.push(c);
+          break;
+        }
+        case 9:
+        case 12: {
+          const i = e.item;
+          i.items && i.items.length > 0 && i.items.map((function (t) {
+            switch (t.itemType) {
+              case 1: {
+                var r = combineParam(e.item, t.item);
+                p.ThePacks.push(r);
+                break;
+              }
+              case 4: {
+                const i = suitParam(e);
+                p.ThePacks.push(i)
+              }
+            }
+          }
+          ))
+        }
+
+      }
+    })
+
+    const remote = 'https://api.m.jd.com/api'
+    const cookies = await this.reqTools.getCookies(remote);
+    const item = cookies.find(c => c.key === 'user-key') || {};
+    const body = {
+      operations: [p],
+      serInfo: {
+        area,
+        'user-key': item['user-key'] || '',
+      },
+    };
+    const payload = {
+      functionId: 'pcCart_jc_cartCheckSingle',
+      appid: 'JDC_mall_cart',
+      body: JSON.stringify(body),
+    };
+    let i = 10
+    while (i--) {
+      try {
+        const res = await this.request(remote, {
+          headers: {
+            'User-Agent': this.userAgent,
+            origin: 'https://cart.jd.com',
+            referer: `https://cart.jd.com/`,
+          },
+          method: "POST",
+          body: qs.stringify(payload)
+        });
+
+        if (!ids) {
+          const result = await res.json()
+          return [true, result]
+        }
+        const result = await res.json()
+        if (!result.success) return [false]
+        const vendors = (result.resultData || {}).cartInfo ? result.resultData.cartInfo.vendors : []
+
+        let checkedNum = 0
+        for (let i = 0; i < vendors.length; i++) {
+          const v = vendors[i] || {}
+          for (let j = 0; j < v.sorted.length; j++) {
+            if (v.sorted[j].checkedNum > 0) {
+              checkedNum += v.sorted[j].checkedNum
+            }
+            if (checkedNum >= ids.length) {
+              return [true, result]
+            }
+          }
+        }
+      } catch (e) {
+        console.log('勾选商品失败:', index)
+      }
+
+      if (i - 1 !== 0) {
+        this.sleep(50)
+      }
+
+    }
+    return [false]
+
+  }
 }
 
 module.exports = Tools;
