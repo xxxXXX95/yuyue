@@ -219,7 +219,7 @@ async function submitOrderFromShoppingCart(
   }
 
   let skuData = [];
-  const isYuyue = params.yuyue || true;
+  const isYuyue = params.yuyue;
   if (isYuyue) {
     try {
       const data = await getSkusData(skuIds, area);
