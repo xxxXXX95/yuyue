@@ -168,6 +168,7 @@ async function submitOrderFromShoppingCart(
   }
   const notInCartIds = await isSkuInCart(skuIds, area);
   const skuIdsSet = new Set(skuIds);
+  const yuyueSkuSet = new Set();
   for (let i = 0; i < skuIds.length; i++) {
     const skuId = skuIds[i];
     try {
@@ -178,7 +179,7 @@ async function submitOrderFromShoppingCart(
       });
       if (yuyueInfo && yuyueInfo.yuyue) {
         // eslint-disable-next-line no-param-reassign
-        params[skuId].yuyue = true;
+        yuyueSkuSet.add(skuId);
       }
       console.log(
         skuId,
@@ -219,11 +220,10 @@ async function submitOrderFromShoppingCart(
   }
 
   let skuData = [];
-  const isYuyue = params.yuyue;
-  if (isYuyue) {
+  if (yuyueSkuSet.size > 0) {
     try {
-      const data = await getSkusData(skuIds, area);
-      skuData = [...skuIdsSet].map(s => data.get(s));
+      const data = await getSkusData(area);
+      skuData = [...yuyueSkuSet].map(s => data.get(s));
       if (skuData.length === 0) {
         throw Error('空的购物车数据');
       }
@@ -234,15 +234,15 @@ async function submitOrderFromShoppingCart(
   }
 
   await timer(date, async () => {
-    if (isYuyue) {
+    if (yuyueSkuSet.size > 0) {
       const d = Date.now();
-      const validIds = [...skuIdsSet];
+      const validIds = [...yuyueSkuSet];
       const [success] = await helper.checkSkus(skuData, validIds, area);
-      console.log(`使用${Date.now() - d}ms, 已勾选${validIds}`);
       if (!success) {
         console.log('勾选失败');
         process.exit();
       }
+      console.log(`使用${Date.now() - d}ms, 已勾选${validIds}`);
     }
 
     let isAvailable = false;
@@ -358,15 +358,14 @@ async function isSkuInCart(skuId, areaId) {
  * @param {*} areadId
  * 购物车中sku的数据
  */
-async function getSkusData(skuId, areaId) {
-  const skuIds = Array.isArray(skuId) ? skuId : [skuId];
+async function getSkusData(areaId) {
   // 获取购物车数据
   const res = await helper.getCartData(areaId);
   const data = new Map();
 
   if (res.success) {
     let allskus = [];
-    if (!res.resultData.cartInfo) return skuIds;
+    if (!res.resultData.cartInfo) return data;
     res.resultData.cartInfo.vendors.forEach(v => {
       allskus = allskus.concat(v.sorted);
     });
@@ -378,7 +377,6 @@ async function getSkusData(skuId, areaId) {
       }
       data.set(String(s.item.Id), s);
     });
-    return data;
   }
   return data;
 }
