@@ -278,7 +278,7 @@ async function submitOrderFromShoppingCart(
       }
       // loopTime 0: 50
       // loopTime 1: 100
-      await sleep(loopTime * 50 + 50);
+      await sleep(100);
     }
     if (!isAvailable) {
       console.log('访问结算页面彻底失败, 溜了');
