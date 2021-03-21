@@ -469,11 +469,13 @@ async function submitOrderProcess(
       let printPoints = false;
       const id = setInterval(async () => {
         const now = Date.now();
-        printPoints = !printPoints;
-        process.stdout.write('\r\x1b[K');
-        process.stdout.write(dayjs(now).format('YYYY-MM-DD HH:mm:ss.SSS'));
-        if (printPoints) {
-          process.stdout.write('...');
+        if (process.platform !== 'win32') {
+          printPoints = !printPoints;
+          process.stdout.write('\r\x1b[K');
+          process.stdout.write(dayjs(now).format('YYYY-MM-DD HH:mm:ss.SSS'));
+          if (printPoints) {
+            process.stdout.write('...');
+          }
         }
         if (now + m * 60 * 1000 >= date) {
           for (let i = 0; i < skuIds.length; i++) {

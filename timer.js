@@ -12,7 +12,7 @@ const getDiffTime = async () => {
   });
   const now = Date.now();
   const json = await res.json();
-  return Date.now() - (now - old) / 2 - json.serverTime;
+  return Date.now() - (now - old) / 2 - json.currentTime2;
 };
 
 module.exports = async (d, fn, im = false) => {
