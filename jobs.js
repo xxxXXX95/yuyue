@@ -223,9 +223,10 @@ async function submitOrderFromShoppingCart(
   if (yuyueSkuSet.size > 0) {
     try {
       const data = await getSkusData(area);
-      skuData = [...yuyueSkuSet].map(s => data.get(s));
+      skuData = [...yuyueSkuSet].map(s => data.get(s)).filter(Boolean);
       if (skuData.length === 0) {
-        throw Error('空的购物车数据');
+        console.log('空的购物车数据');
+        throw Error();
       }
     } catch (e) {
       console.log('获取购物车数据失败');
