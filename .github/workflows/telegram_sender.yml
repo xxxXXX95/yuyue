@@ -31,4 +31,4 @@ jobs:
           # Job status
           status: ✅release
           # Custom message
-          message: ${{context.github.ref}}
+          message: ${{github.ref}}
