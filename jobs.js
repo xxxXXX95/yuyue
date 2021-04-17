@@ -286,6 +286,7 @@ async function submitOrderFromShoppingCart(
       console.log(
         `访问订单结算时间:${dayjs(checkoutPageTime).format('YYYY-MM-DD HH:mm:ss.SSS')}`
       );
+      await helper.checkSkus(skuData, [...yuyueSkuSet], area, true);
       process.exit();
     }
     i = submitTimes || 10;
@@ -296,7 +297,7 @@ async function submitOrderFromShoppingCart(
         if (res.success) {
           const now = new Date();
           const text = `订单提交成功!订单号:${res.orderId
-          },时间:${dayjs(now).format('YYYY-MM-DD HH:mm:ss.SSS')}`;
+            },时间:${dayjs(now).format('YYYY-MM-DD HH:mm:ss.SSS')}`;
           console.log(text);
           await helper.sendToWechat(text);
           process.exit();
@@ -322,6 +323,8 @@ async function submitOrderFromShoppingCart(
     console.log(
       `提交订单开始时间:${dayjs(submitOrderTime).format('YYYY-MM-DD HH:mm:ss.SSS')}`
     );
+    await helper.checkSkus(skuData, [...yuyueSkuSet], area, true);
+    process.exit();
   });
 }
 /**
