@@ -220,10 +220,16 @@ async function submitOrderFromShoppingCart(
   }
 
   let skuData = [];
-  if (yuyueSkuSet.size > 0) {
+  if (skuIdsSet.size > 0) {
     try {
       const data = await getSkusData(area);
-      skuData = [...yuyueSkuSet].map(s => data.get(s)).filter(Boolean);
+      skuData = [...skuIdsSet].map(s => data.get(s)).filter(Boolean).map(item => {
+        if (item.item.items) {
+          // eslint-disable-next-line no-param-reassign
+          item.item.items = item.item.items.filter(i => skuIdsSet.has(i.item.Id));
+          return item;
+        }
+      });
       if (skuData.length === 0) {
         console.log('空的购物车数据');
         throw Error();
@@ -286,7 +292,7 @@ async function submitOrderFromShoppingCart(
       console.log(
         `访问订单结算时间:${dayjs(checkoutPageTime).format('YYYY-MM-DD HH:mm:ss.SSS')}`
       );
-      await helper.checkSkus(skuData, [...yuyueSkuSet], area, true);
+      await helper.checkSkus(skuData, [], area, true);
       process.exit();
     }
     i = submitTimes || 10;
@@ -323,7 +329,7 @@ async function submitOrderFromShoppingCart(
     console.log(
       `提交订单开始时间:${dayjs(submitOrderTime).format('YYYY-MM-DD HH:mm:ss.SSS')}`
     );
-    await helper.checkSkus(skuData, [...yuyueSkuSet], area, true);
+    await helper.checkSkus(skuData, [], area, true);
     process.exit();
   });
 }
@@ -376,7 +382,7 @@ async function getSkusData(areaId) {
     allskus.forEach(s => {
       if (s.item && s.item.items) {
         s.item.items.forEach(i => {
-          data.set(String(i.item.Id), i);
+          data.set(String(i.item.Id), s);
         });
       }
       data.set(String(s.item.Id), s);
