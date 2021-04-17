@@ -220,12 +220,19 @@ async function submitOrderFromShoppingCart(
   }
 
   let skuData = [];
-  if (yuyueSkuSet.size > 0) {
+  if (skuIdsSet.size > 0) {
     try {
       const data = await getSkusData(area);
-      skuData = [...yuyueSkuSet].map(s => data.get(s));
+      skuData = [...skuIdsSet].map(s => data.get(s)).filter(Boolean).map(item => {
+        if (item.item.items) {
+          // eslint-disable-next-line no-param-reassign
+          item.item.items = item.item.items.filter(i => skuIdsSet.has(i.item.Id));
+          return item;
+        }
+      });
       if (skuData.length === 0) {
-        throw Error('空的购物车数据');
+        console.log('空的购物车数据');
+        throw Error();
       }
     } catch (e) {
       console.log('获取购物车数据失败');
@@ -285,6 +292,7 @@ async function submitOrderFromShoppingCart(
       console.log(
         `访问订单结算时间:${dayjs(checkoutPageTime).format('YYYY-MM-DD HH:mm:ss.SSS')}`
       );
+      await helper.checkSkus(skuData, [], area, true);
       process.exit();
     }
     i = submitTimes || 10;
@@ -295,7 +303,7 @@ async function submitOrderFromShoppingCart(
         if (res.success) {
           const now = new Date();
           const text = `订单提交成功!订单号:${res.orderId
-          },时间:${dayjs(now).format('YYYY-MM-DD HH:mm:ss.SSS')}`;
+            },时间:${dayjs(now).format('YYYY-MM-DD HH:mm:ss.SSS')}`;
           console.log(text);
           await helper.sendToWechat(text);
           process.exit();
@@ -321,6 +329,8 @@ async function submitOrderFromShoppingCart(
     console.log(
       `提交订单开始时间:${dayjs(submitOrderTime).format('YYYY-MM-DD HH:mm:ss.SSS')}`
     );
+    await helper.checkSkus(skuData, [], area, true);
+    process.exit();
   });
 }
 /**
@@ -372,7 +382,7 @@ async function getSkusData(areaId) {
     allskus.forEach(s => {
       if (s.item && s.item.items) {
         s.item.items.forEach(i => {
-          data.set(String(i.item.Id), i);
+          data.set(String(i.item.Id), s);
         });
       }
       data.set(String(s.item.Id), s);

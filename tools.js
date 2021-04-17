@@ -677,8 +677,16 @@ class Tools {
     return await res.json();
   };
 
-  // 选中sku
-  checkSkus = async (skus, ids = [], area) => {
+  // 选中/取消选中sku
+  /**
+   * 
+   * @param {*} skus 
+   * @param {*} ids 
+   * @param {*} area 
+   * @param {*} uncheck 取消选中
+   * @returns 
+   */
+  checkSkus = async (skus, ids = [], area, uncheck) => {
     const p = {
       ThePacks: [],
       TheSkus: [],
@@ -800,6 +808,12 @@ class Tools {
     const remote = 'https://api.m.jd.com/api'
     const cookies = await this.reqTools.getCookies(remote);
     const item = cookies.find(c => c.key === 'user-key') || {};
+    let functionId = 'pcCart_jc_cartCheckSingle'
+    if (uncheck) {
+      p.carttype = '6'
+      functionId = 'pcCart_jc_cartUnCheckSingle'
+    }
+
     const body = {
       operations: [p],
       serInfo: {
@@ -808,10 +822,11 @@ class Tools {
       },
     };
     const payload = {
-      functionId: 'pcCart_jc_cartCheckSingle',
+      functionId,
       appid: 'JDC_mall_cart',
       body: JSON.stringify(body),
     };
+
     let i = 10
     while (i--) {
       try {
@@ -824,7 +839,10 @@ class Tools {
           method: "POST",
           body: qs.stringify(payload)
         });
-
+        if (uncheck) {
+          console.log("已经取消勾选")
+          break
+        }
         if (!ids) {
           const result = await res.json()
           return [true, result]
