@@ -39,6 +39,10 @@ if (cluster.isWorker) {
       forceKO = false,
       ...rest
     } = item;
+    if (!areaId) {
+      console.log('no areaId!请确认填写了正确到areaId');
+      process.exit(1);
+    }
     const expectedDate = new Date(item.date);
     // 任务进程
     console.log(
@@ -49,7 +53,9 @@ if (cluster.isWorker) {
       'sku',
       item.skuId
     );
-    submitOrderProcess(date, skuId, areaId, { forceKO, ...rest });
+    // 补足 2_xxx_xxx -> 2_xxx_xxx_0
+    const area = areaId.split('_').length === 3 ? `${areaId}_0` : areaId;
+    submitOrderProcess(date, skuId, area, { forceKO, ...rest });
   };
   process.on('unhandledRejection', reason => {
     console.log(reason);

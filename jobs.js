@@ -398,9 +398,7 @@ async function getSkusData(areaId) {
  * @returns {array} [isKO, {cat, area,...}]
  * 访问商品 detail 页面, 获取商品是否是秒杀商品和其他参数
  */
-async function getPageConfig(skuId, areaId) {
-  // 补足 2_xxx_xxx -> 2_xxx_xxx_0
-  const area = areaId.split('_').length === 3 ? `${areaId}_0` : areaId;
+async function getPageConfig(skuId, area) {
   // 访问详情页 item.xxx.com/skuId.html
   const res = await helper.requestItemDetailPage(skuId);
   const text = await res.text();
@@ -437,10 +435,6 @@ async function submitOrderProcess(
   areaId,
   { forceKO = false, submitTimes, maxWaitingMS }
 ) {
-  if (!areaId) {
-    console.log('no areaId!请确认填写了正确到areaId');
-    process.exit(1);
-  }
   if (!skuId) {
     console.error('skuId 缺少');
     process.exit(1);
