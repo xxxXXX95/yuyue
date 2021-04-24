@@ -49,7 +49,9 @@ if (cluster.isWorker) {
       'sku',
       item.skuId
     );
-    submitOrderProcess(date, skuId, areaId, { forceKO, ...rest });
+    // 补足 2_xxx_xxx -> 2_xxx_xxx_0
+    const area = areaId.split('_').length === 3 ? `${areaId}_0` : areaId;
+    submitOrderProcess(date, skuId, area, { forceKO, ...rest });
   };
   process.on('unhandledRejection', reason => {
     console.log(reason);
