@@ -435,10 +435,6 @@ async function submitOrderProcess(
   areaId,
   { forceKO = false, submitTimes, maxWaitingMS }
 ) {
-  if (!areaId) {
-    console.log('no areaId!请确认填写了正确到areaId');
-    process.exit(1);
-  }
   if (!skuId) {
     console.error('skuId 缺少');
     process.exit(1);

@@ -39,6 +39,10 @@ if (cluster.isWorker) {
       forceKO = false,
       ...rest
     } = item;
+    if (!areaId) {
+      console.log('no areaId!请确认填写了正确到areaId');
+      process.exit(1);
+    }
     const expectedDate = new Date(item.date);
     // 任务进程
     console.log(
