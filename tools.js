@@ -848,7 +848,7 @@ class Tools {
           return [true, result]
         }
         const result = await res.json()
-        if (!result.success) return [false]
+        if (!result.success) continue
         const vendors = (result.resultData || {}).cartInfo ? result.resultData.cartInfo.vendors : []
 
         let checkedNum = 0
@@ -868,7 +868,7 @@ class Tools {
       }
 
       if (i - 1 !== 0) {
-        this.sleep(50)
+        await this.sleep(50)
       }
 
     }
