@@ -8,3 +8,4 @@ qrcode.png
 config.go.json
 test.js
 coverage
+screenshot*
