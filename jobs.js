@@ -248,8 +248,13 @@ async function submitOrderFromShoppingCart(
 			const d = Date.now();
 			const validIds = [...yuyueSkuSet];
 			const [success] = await helper.checkSkus(skuData, validIds, area);
+			console.log('开始勾选:', dayjs(d).format('YYYY-MM-DD HH:mm:ss.SSS'));
 			if (!success) {
 				console.log('勾选失败');
+				console.log(
+					'已经取消勾选:',
+					dayjs(new Date()).format('YYYY-MM-DD HH:mm:ss.SSS')
+				);
 				process.exit();
 			}
 			console.log(`使用${Date.now() - d}ms, 已勾选${validIds}`);

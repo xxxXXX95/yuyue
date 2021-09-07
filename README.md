@@ -117,7 +117,7 @@ exports.forceLogin = false;
 
 6 本项目目录下执行 `node index`
 
-7 扫描终端中的二维码登录, 24 小时之内重启不需要再次扫码登录, `cookie` 串会保留在本地文件 `cookie.json` 中. 过期的话必须重新扫码（代码自动校验）
+7 可以扫描终端中的二维码登录, 24 小时之内重启不需要再次扫码登录, `cookie` 串会保留在本地文件 `cookie.json` 中. 过期的话必须重新扫码（代码自动校验）, 或者你已经从别处获取到了`cookie`, 请至`cookie.json`(没有则新建一个)粘贴, 格式`"key1=value1;key2=value2;"`
 
 8 新增`pupetter` windows 下面 280M, linux 或者 mac 下面 200M 不到
 

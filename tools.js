@@ -29,7 +29,6 @@ class Tools {
 		this.initInfo = null;
 		this.takHandle = null;
 		this.reserveUrl = 'url';
-
 	}
 
 	sleep(time) {
@@ -51,7 +50,6 @@ class Tools {
 		try {
 			const rawcookie = (await readFile(pathname)).toString('utf8');
 			if (!rawcookie) return;
-			console.log('尝试解析cookieraw');
 			if (!rawcookie.startsWith('{') && !rawcookie.endsWith('}')) {
 				const cookies = JSON.parse(rawcookie).split(';').map(parse);
 				const store = new MemoryCookieStore();
@@ -455,7 +453,7 @@ class Tools {
 				'https://marathon.jd.com'
 			);
 		});
-	    const takHandle = await page.evaluateHandle(() => window._tak);
+		const takHandle = await page.evaluateHandle(() => window._tak);
 		this.takHandle = async () => {
 			return await page.evaluate(tak => tak.getTakId(), takHandle);
 		};

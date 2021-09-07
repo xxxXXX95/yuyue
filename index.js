@@ -23,7 +23,6 @@ if (!config.eid || !config.fp) {
 
 if (cluster.isWorker) {
 	const setupLoginWork = item => {
-		console.log('progress.worker:login', process.pid);
 		if (item.forceLogin) {
 			console.warn(
 				'已开启强制扫码登录, 如果接下里24小时内频繁重启, 重启最好关闭了'
@@ -48,7 +47,7 @@ if (cluster.isWorker) {
 		console.log(
 			'process.worker:',
 			process.pid,
-			'时间:',
+			'待抢购时间:',
 			dayjs(expectedDate).format('YYYY-MM-DD HH:mm:ss.SSS'),
 			'sku',
 			item.skuId
@@ -68,9 +67,11 @@ if (cluster.isWorker) {
 	});
 	cluster.worker.on('message', async job => {
 		if (job.type === 'login') {
+			console.log('progress.worker:login', process.pid);
 			await setupLoginWork(job);
 			cluster.worker.send({ doneWork: 'login' });
-			process.exit()
+			console.log('登录完成');
+			process.exit();
 		}
 		if (job.type === 'task') {
 			setupWork(job);
