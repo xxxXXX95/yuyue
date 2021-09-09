@@ -485,8 +485,8 @@ async function submitOrderProcess(
 		beforeRunTaskMinues < 2
 			? 2
 			: beforeRunTaskMinues < 6
-			? beforeRunTaskMinues
-			: 6;
+				? beforeRunTaskMinues
+				: 6;
 
 	if (m === 2) {
 		await Promise.all(
@@ -499,15 +499,16 @@ async function submitOrderProcess(
 						allSKUParam[skuId] = params;
 						try {
 							cookies.forEach(c => {
+								const domain = c.domain.startsWith('.')
+									? c.domain.slice(1)
+									: c.domain
 								helper.reqTools.cookiejar.setCookieSync(
 									new Cookie({
 										key: c.name,
 										value: c.value,
-										domain: c.domain.startsWith('.')
-											? c.domain.slice(1)
-											: c.domain
+										domain: domain
 									}),
-									'https://item.jd.com'
+									`https://${domain}`
 								);
 							});
 						} catch (e) {
