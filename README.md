@@ -1,23 +1,23 @@
 # 买 jd 预约抢购商品（原 jd_by_mask）
 
 ### 此代码受 https://github.com/tychxn/jd-assistan 启发完成
-TG Group  
 
-[来吧加入电报组😊](https://t.me/joinchat/I5uwLB2vr6pruLYG)  
+TG Group
 
-Issues帮助
+[来吧加入电报组 😊](https://t.me/joinchat/I5uwLB2vr6pruLYG)
+
+Issues 帮助
 https://github.com/xxxXXX95/yuyue/issues/8
 
 Master
 
 https://github.com/xxxXXX95/yuyue/tree/master
 
-
 ## 支持预约-抢购-提交订单流程的商品
 
 狗东预约抢购模式下又设置了如下俩种抢购流程, 现在程序内部实现了自动区分俩种流程。区分依据参照下文`代码分析`处贴的俩个 js 文件
 
-1. 到时间直接抢购, 也叫秒杀(例如以前的口罩, 类似茅台(茅台现在限定App中抢购了😄))
+1. 到时间直接抢购, 也叫秒杀(例如以前的口罩, 类似茅台(茅台现在限定 App 中抢购了 😄))
 2. 到时间先添加购物车 -> 到购物车提交订单(普通显卡预约抢购类)
 3. 原价到时间变价
 
@@ -29,11 +29,11 @@ https://github.com/xxxXXX95/yuyue/tree/master
 4. 因为狗东有红包的话, 会自动勾选使用红包.为了抢购成功和快速, 配置文件中`最好填写 6 位支付密码`(保存密码的`config.js` **`不会从你本地上传到任何地方,请放心!!`**)
 5. 已知 `windows` 系统自带终端打印出来的二维码错位, 请更换终端或者手动打开自动生成在本目录下`qrcode.png`文件, 进行扫码
 6. 由`jd_by_mask` 改名 `jd_yuyue`.之前使用错别字防止搜索且买口罩也不符合现在仓库内容, 所以改名 `jd_yuyue` 了
-7. 由 `jd_yuyue` 改名 `yuyue`, 被x东邮件通知下架. 避免出问题, 规避搜索
+7. 由 `jd_yuyue` 改名 `yuyue`, 被 x 东邮件通知下架. 避免出问题, 规避搜索
 
-TG Group  
+TG Group
 
-[来吧加入电报组😊](https://t.me/joinchat/I5uwLB2vr6pruLYG)
+[来吧加入电报组 😊](https://t.me/joinchat/I5uwLB2vr6pruLYG)
 
 ## Quick Start
 
@@ -42,28 +42,28 @@ TG Group
 ```js
 // 最简单只加 eid, areaId 和 fp
 const config = {
-  // 支持自定义 UA, 非必填
-  userAgent:
-    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.198 Safari/537.36',
-  // 是否微信公众号推送抢购结果, 非必填
-  messenger: false, // true, false
-  // key 值在 http://sc.ftqq.com/3.version, 查看申请使用的方法. 把key粘贴至这里, 微信关注网站中的公众号即可.
-  sckey: '', // string, messenger 是 true 则为必填, 不填写不影响抢购流程
+	// 支持自定义 UA, 非必填
+	userAgent:
+		'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.198 Safari/537.36',
+	// 是否微信公众号推送抢购结果, 非必填
+	messenger: false, // true, false
+	// key 值在 http://sc.ftqq.com/3.version, 查看申请使用的方法. 把key粘贴至这里, 微信关注网站中的公众号即可.
+	sckey: '', // string, messenger 是 true 则为必填, 不填写不影响抢购流程
 
-  // 必填,
-  // 最新:用浏览器(最好chrome)打开本地文件夹下 
-  // `get_eid_fp.html`文件, 将网页中`eid`,`fp` 填入配置中
-  // 其他方式: 或者电脑打开 jd 登陆页面, devtools, 选择 
-  // `Elements`, 搜索 eid 和 sessionId(即fp), 
-  // 在搜索到的input元素上面 value 属性中的值复制过来
-  eid: '', // string, 必填
-  fp: '', // string, 必填
-  // 6位支付密码如 '123456' 最好填上.如果当前账号有红包之类的则必填
-  // 只用于使用红包, 优惠券等. 不用于支付订单
-  pwd: '',
-  // *现在必须设置areaId*
-  // areaId 获取在第5步骤说明
-  areaId: '',
+	// 必填,
+	// 最新:用浏览器(最好chrome)打开本地文件夹下
+	// `get_eid_fp.html`文件, 将网页中`eid`,`fp` 填入配置中
+	// 其他方式: 或者电脑打开 jd 登陆页面, devtools, 选择
+	// `Elements`, 搜索 eid 和 sessionId(即fp),
+	// 在搜索到的input元素上面 value 属性中的值复制过来
+	eid: '', // string, 必填
+	fp: '', // string, 必填
+	// 6位支付密码如 '123456' 最好填上.如果当前账号有红包之类的则必填
+	// 只用于使用红包, 优惠券等. 不用于支付订单
+	pwd: '',
+	// *现在必须设置areaId*
+	// areaId 获取在第5步骤说明
+	areaId: ''
 };
 module.exports = config;
 ```
@@ -72,7 +72,7 @@ module.exports = config;
 
 3 在`本项目目录`(不是 nodejs 安装目录)下执行 `npm install --production` 或者 `yarn --prod`(不熟悉的, 就直接使用 npm 效果一样的) 安装依赖, 已经默认配置使用 `taobao` 镜像地址下载依赖包
 
-4 配置`tasks-pool.js`(以前在*index.js* 中, 现在迁移出来了) 中设置日期 `date`, `forceKO`, `areadId`(如果已在 `config.js` 中设置了`areadId`, 这里无需再设置) 和要抢购的 `skuId`, 可选参数 新增 `submitTimes` 不填默认 10,  `maxWaitingMS` 不填默认 800
+4 配置`tasks-pool.js`(以前在*index.js* 中, 现在迁移出来了) 中设置日期 `date`, `forceKO`, `areadId`(如果已在 `config.js` 中设置了`areadId`, 这里无需再设置) 和要抢购的 `skuId`, 可选参数 新增 `submitTimes` 不填默认 10, `maxWaitingMS` 不填默认 800
 格式如下
 
 ```js
@@ -96,14 +96,14 @@ const dd3 = new Date(2020, 2, 3, 21, 0, 0, 400).getTime();
 // 需要更改 年/月/日 时:分:秒.毫秒
 // skuId 获取方法， 打开任意一个商品详情页如 `https://item.jd.com/100011521400.html`, 则 `100011521400` 就是其skuId
 exports.pool = [
-  // 1 *现在必须设置areaId*
-  //   如果上面 `config.js`中已经配置过了, 此处可以不用再配置`areaId`, areaId 获取在第 5 步骤说明
-  // 2 forceKO: true/false (废弃不用)
-  // 3 此脚本也可在非预约抢购流程中的秒杀(到时间变价那种)使用,为防止提交原价订单, 可配置提交订单重试次数 推荐 2-3 次(不明白的忽略)
-  // 4 如果抢购过程中出现 `请求结算页面超过xxx ms`, 请增大maxWaitingMS, 建议1000-2000之间, 不设置默认 800
-  { skuId: '100011621642', date: dd1, areaId: `2_2825_51936` },
+	// 1 *现在必须设置areaId*
+	//   如果上面 `config.js`中已经配置过了, 此处可以不用再配置`areaId`, areaId 获取在第 5 步骤说明
+	// 2 forceKO: true/false (废弃不用)
+	// 3 此脚本也可在非预约抢购流程中的秒杀(到时间变价那种)使用,为防止提交原价订单, 可配置提交订单重试次数 推荐 2-3 次(不明白的忽略)
+	// 4 如果抢购过程中出现 `请求结算页面超过xxx ms`, 请增大maxWaitingMS, 建议1000-2000之间, 不设置默认 800
+	{ skuId: '100011621642', date: dd1, areaId: `2_2825_51936` }
 	// skuId: '10022991959725',areaId: `2_2825_51936`, date: dd1, submitTimes: 3, maxWaitingMS: 1000
-  // 不同时间的sku, 复制上述项修改值, 填写在下方
+	// 不同时间的sku, 复制上述项修改值, 填写在下方
 ];
 // 设置要强制扫码登录(没搞懂使用场景的忽略此配置)
 // 说明: 因为 x 东, 24小时就要重新登录, 防止运行时登录状态有效
@@ -117,7 +117,9 @@ exports.forceLogin = false;
 
 6 本项目目录下执行 `node index`
 
-7 扫描终端中的二维码登录, 24 小时之内重启不需要再次扫码登录, `cookie` 串会保留在本地文件 `cookie.json` 中. 过期的话必须重新扫码（代码自动校验）
+7 可以扫描终端中的二维码登录, 24 小时之内重启不需要再次扫码登录, `cookie` 串会保留在本地文件 `cookie.json` 中. 过期的话必须重新扫码（代码自动校验）, 或者你已经从别处获取到了`cookie`, 请至`cookie.json`(没有则新建一个)粘贴, 格式`"key1=value1;key2=value2;"`
+
+8 新增`pupetter` windows 下面 280M, linux 或者 mac 下面 200M 不到
 
 ## Todo
 
@@ -156,9 +158,9 @@ exports.forceLogin = false;
 
 - 订单<img src="https://user-images.githubusercontent.com/13815865/77068877-56728700-6a22-11ea-8102-925cc25a4b92.png" />
 
-- 成功案例太多了, tg群很多人都抢到了, 尤其日用品, 如日用纸, 和0.01的水果
-  
-更多案例(☝️加群): [issues/2](https://github.com/meooxx/jd_by_mask/issues/2)
+- 成功案例太多了, tg 群很多人都抢到了, 尤其日用品, 如日用纸, 和 0.01 的水果
+
+更多案例(☝️ 加群): [issues/2](https://github.com/meooxx/jd_by_mask/issues/2)
 
 ## Advanced(废弃)
 
