@@ -9,3 +9,4 @@ config.go.json
 test.js
 coverage
 screenshot*
+*.exe
