@@ -428,16 +428,17 @@ class Tools {
 			}))
 		);
 		let res = await page.goto(url, {
-			referer: 'https://marathon.jd.com/'
+			referer: 'https://marathon.jd.com/',
+			waitUntil: 'domcontentloaded'
 		});
 		let i = 5;
 		while (i--) {
 			if (res.url().indexOf('marathon.jd.com/seckill/seckill') === -1) {
-				const r = await this.request(`https://itemko.jd.com/itemShowBtn?skuId=${skuId}&callback=fn131231`)
-				const url = this.parseJsonp(await r.text()).url
-				res = await page.goto(
-					'https:' + url
+				const r = await this.request(
+					`https://itemko.jd.com/itemShowBtn?skuId=${skuId}&callback=fn131231`
 				);
+				const url = this.parseJsonp(await r.text()).url;
+				res = await page.goto('https:' + url);
 
 				continue;
 			}
@@ -445,7 +446,7 @@ class Tools {
 		}
 		const pageCookies = await page.cookies();
 		pageCookies.forEach(c => {
-			const domain = c.domain.startsWith('.') ? c.domain.slice(1) : c.domain
+			const domain = c.domain.startsWith('.') ? c.domain.slice(1) : c.domain;
 			this.reqTools.cookiejar.setCookieSync(
 				new Cookie({
 					key: c.name,
@@ -805,19 +806,19 @@ class Tools {
 					return (
 						4 == i.itemType
 							? ((t = 12 == a ? 29 : 24),
-								(o = [
+							  (o = [
 									{
 										Id: i.item.Id,
 										num: s,
 										sType: t
 									}
-								]))
+							  ]))
 							: (o = [
-								{
-									Id: i.item.Id,
-									num: s
-								}
-							]),
+									{
+										Id: i.item.Id,
+										num: s
+									}
+							  ]),
 						{
 							Id: n,
 							num: r,
@@ -829,19 +830,19 @@ class Tools {
 					return (
 						4 == i.itemType
 							? ((t = 12 == a ? 29 : 24),
-								(o = [
+							  (o = [
 									{
 										Id: i.item.Id,
 										num: s,
 										sType: t
 									}
-								]))
+							  ]))
 							: (o = [
-								{
-									Id: i.item.Id,
-									num: s
-								}
-							]),
+									{
+										Id: i.item.Id,
+										num: s
+									}
+							  ]),
 						{
 							Id: n,
 							num: r,
