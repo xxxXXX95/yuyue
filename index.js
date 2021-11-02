@@ -80,8 +80,6 @@ if (cluster.isWorker) {
 } else {
 	// 使用独立进程登陆
 	// forcelogin, 强制登陆一次
-	const cookies = [];
-	let isWritingFile = false;
 	cluster.fork().send({ type: 'login', forceLogin });
 	cluster.on('message', (_, message) => {
 		// 登陆流程

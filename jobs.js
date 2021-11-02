@@ -4,8 +4,9 @@ const timer = require('./timer');
 const { Cookie } = require('tough-cookie');
 
 const helper = new ToolsClass();
-const { sleep } = helper;
+const { sleep, safeMock } = helper;
 const { getPage, setUpBrowser, getHandlerValue } = require('./puppeteerHelper');
+const config = require('./config.js');
 
 // 登录
 async function login(directly = false) {
@@ -63,23 +64,34 @@ async function submitOrderFromItemDetailPage(
 		if (!res) {
 			return;
 		}
+		let maxTimes = config.maxPollingTimes || 100;
+		const pollingInterval = config.pollingInterval || 5000;
+		let times = 0;
+		safeMock(() => {
+			concurrency = 0;
+		}, false);
 		for (let i = 0; i <= concurrency; i++) {
 			console.log(i, '抢购:', new Date().toLocaleString());
-			helper.submitOrder(skuId).then(async r => {
+			await helper.submitOrder(skuId).then(async r => {
 				console.log(r);
 				if (r.success) {
 					await helper.sendToWechat(r);
 					process.exit();
 				}
 				if (i === concurrency) {
-					console.log('抢购失败, 检查商品状态...');
-					const [_, ms] = await checkItemState(skuId, params, 1);
-					if (ms) {
-						console.log(
-							'商品抢购应该还没开始(有货), 请查看相关页面重新启动, 剩余(ms):',
-							ms
-						);
+					console.log('抢购失败, 轮询检查商品状态...');
+					while (times < maxTimes) {
+						console.log(`第${times}次轮询`);
+						times++;
+						const [avalible] = await checkItemState(skuId, params, 1);
+						if (avalible) {
+							i = 0;
+							concurrency = 5;
+							return;
+						}
+						await sleep(pollingInterval);
 					}
+
 					await helper.sendToWechat('抢购失败');
 					process.exit();
 				}
@@ -125,8 +137,8 @@ async function checkItemState(skuId, params, retry = 30) {
 				console.log(
 					// yuyueInfo.state,
 					stockInfo.stockDesc,
-					yuyueInfo.cdPrefix,
-					yuyueInfo.countdown
+					yuyueInfo.cdPrefix || '',
+					yuyueInfo.countdown || ''
 				);
 				stock = isStock;
 				seconds = yuyueInfo.countdown;
@@ -171,8 +183,15 @@ async function submitOrderFromShoppingCart(
 	const notInCartIds = await isSkuInCart(skuIds, area);
 	const skuIdsSet = new Set(skuIds);
 	const yuyueSkuSet = new Set();
-	for (let i = 0; i < skuIds.length; i++) {
-		const skuId = skuIds[i];
+	// 最大轮询次数
+	const maxPollingTimes = config.maxPollingTimes || 100;
+	// 轮询间隔
+	const pollingInterval = config.pollingInterval || 5000;
+	let times = 0;
+	//现在只支持一个
+	const skuId = skuIds[0];
+	while (times <= maxPollingTimes) {
+		times++;
 		try {
 			const { stockInfo = {}, yuyueInfo = {} } = await helper.getWareInfo({
 				skuId,
@@ -184,6 +203,8 @@ async function submitOrderFromShoppingCart(
 				yuyueSkuSet.add(skuId);
 			}
 			console.log(
+				'轮询查询',
+				times,
 				skuId,
 				'库存信息:',
 				stockInfo.stockState,
@@ -198,25 +219,28 @@ async function submitOrderFromShoppingCart(
 					if (!result) {
 						skuIdsSet.delete(skuId);
 						console.log('添加购物车失败, skuId:', skuId);
-						return;
+						continue;
 					}
 				}
-			} else {
-				console.log('无库存, skuId:', skuId);
-				skuIdsSet.delete(skuId);
+				break;
 			}
 		} catch (e) {
-			//
+			safeMock(() => {
+				console.log(e);
+			});
 		}
-		if (i < skuIds.length - 1) {
-			await new Promise(r => setTimeout(r, 1500));
+		if (times > 0) {
+			await sleep(pollingInterval);
+		}
+		if (times === maxPollingTimes) {
+			skuIdsSet.delete(skuId);
 		}
 	}
-	console.log('待抢购商品:', [...skuIdsSet]);
 	if (skuIdsSet.size === 0) {
 		console.log('没有可抢购的skuId');
 		process.exit(1);
 	}
+	console.log('待抢购商品:', [...skuIdsSet]);
 	let skuData = [];
 	if (skuIdsSet.size > 0) {
 		try {
@@ -243,7 +267,32 @@ async function submitOrderFromShoppingCart(
 		}
 	}
 
-	await timer(date, async () => {
+	const submitOrder = async () => {
+		const isSucess = await submitOrderImpl();
+		if (isSucess) {
+			process.exit();
+		}
+		const maxPollingTimes = config.maxPollingTimes || 100;
+		const pollingInterval = config.pollingInterval || 5000;
+		let times = 0;
+		while (times < maxPollingTimes) {
+			times++;
+			const [avalible] = await checkItemState(skuId, params[skuId], 1);
+			if (avalible) {
+				const isSucess = await submitOrderImpl();
+				if (isSucess) {
+					process.exit();
+				}
+			}
+			await sleep(pollingInterval);
+			console.log('正在轮询次数:', times);
+		}
+		console.log('我已经尽力了, 你被耍猴了, 溜了');
+		await helper.checkSkus(skuData, [], area, true);
+		process.exit();
+	};
+
+	const submitOrderImpl = async () => {
 		if (yuyueSkuSet.size > 0) {
 			const d = Date.now();
 			const validIds = [...yuyueSkuSet];
@@ -255,7 +304,7 @@ async function submitOrderFromShoppingCart(
 					'已经取消勾选:',
 					dayjs(new Date()).format('YYYY-MM-DD HH:mm:ss.SSS')
 				);
-				process.exit();
+				return false;
 			}
 			console.log(`使用${Date.now() - d}ms, 已勾选${validIds}`);
 		}
@@ -308,8 +357,7 @@ async function submitOrderFromShoppingCart(
 					'YYYY-MM-DD HH:mm:ss.SSS'
 				)}`
 			);
-			await helper.checkSkus(skuData, [], area, true);
-			process.exit();
+			return false;
 		}
 		i = submitTimes || 10;
 		const submitOrderTime = new Date();
@@ -323,7 +371,7 @@ async function submitOrderFromShoppingCart(
 					).format('YYYY-MM-DD HH:mm:ss.SSS')}`;
 					console.log(text);
 					await helper.sendToWechat(text);
-					process.exit();
+					return true;
 				} else {
 					if (res.noStockSkuIds) {
 						skuIdsSet.forEach(skuId => {
@@ -333,7 +381,7 @@ async function submitOrderFromShoppingCart(
 						});
 						if (skuIdsSet.size === 0) {
 							console.log('所有sku都没库存了');
-							return;
+							break;
 						}
 					}
 					console.log('尝试index', i, '失败原因', res.message || res);
@@ -348,9 +396,9 @@ async function submitOrderFromShoppingCart(
 				'YYYY-MM-DD HH:mm:ss.SSS'
 			)}`
 		);
-		await helper.checkSkus(skuData, [], area, true);
-		process.exit();
-	});
+		return false;
+	};
+	await timer(date, submitOrder);
 }
 /**
  *
@@ -485,8 +533,8 @@ async function submitOrderProcess(
 		beforeRunTaskMinues < 2
 			? 2
 			: beforeRunTaskMinues < 6
-				? beforeRunTaskMinues
-				: 6;
+			? beforeRunTaskMinues
+			: 6;
 
 	if (m === 2) {
 		await Promise.all(
@@ -501,7 +549,7 @@ async function submitOrderProcess(
 							cookies.forEach(c => {
 								const domain = c.domain.startsWith('.')
 									? c.domain.slice(1)
-									: c.domain
+									: c.domain;
 								helper.reqTools.cookiejar.setCookieSync(
 									new Cookie({
 										key: c.name,
