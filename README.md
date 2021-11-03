@@ -44,28 +44,44 @@ TG Group
 const config = {
 	// 支持自定义 UA, 非必填
 	userAgent:
-		'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.198 Safari/537.36',
+	  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.198 Safari/537.36',
 	// 是否微信公众号推送抢购结果, 非必填
 	messenger: false, // true, false
 	// key 值在 http://sc.ftqq.com/3.version, 查看申请使用的方法. 把key粘贴至这里, 微信关注网站中的公众号即可.
 	sckey: '', // string, messenger 是 true 则为必填, 不填写不影响抢购流程
-
+  
 	// 必填,
-	// 最新:用浏览器(最好chrome)打开本地文件夹下
+	// ---------------------------------------
+	// 最新:用浏览器(最好chrome)打开本地文件夹下 
 	// `get_eid_fp.html`文件, 将网页中`eid`,`fp` 填入配置中
-	// 其他方式: 或者电脑打开 jd 登陆页面, devtools, 选择
-	// `Elements`, 搜索 eid 和 sessionId(即fp),
+
+	// 其他方式: 或者电脑打开 jd 登陆页面, devtools, 选择 
+	// `Elements`, 搜索 eid 和 sessionId(即fp), 
 	// 在搜索到的input元素上面 value 属性中的值复制过来
 	eid: '', // string, 必填
 	fp: '', // string, 必填
 	// 6位支付密码如 '123456' 最好填上.如果当前账号有红包之类的则必填
 	// 只用于使用红包, 优惠券等. 不用于支付订单
+	// *此密码只存在本地文件夹, 不会上传给任何第三方*
+	// 请勿相信任何其他本程序的衍生程序
 	pwd: '',
 	// *现在必须设置areaId*
 	// areaId 获取在第5步骤说明
-	areaId: ''
-};
-module.exports = config;
+	areaId: '',
+	// 必填结束
+	// ------------------------------------------
+	// 非必填, v2.1.*版本新增
+	// 无货后, 查询库存最大次数
+	maxPollingTimes: 100,
+	// 5 * 1000 = 5s
+	pollingInterval: 5000, 
+	// 提交订单失败后, 是否继续轮询库存状态
+	// 当有库存时, 再次提交订单
+	// 默认 false 因为秒杀商品过了抢购时间会恢复原价
+	// 此时为true,就会提交一个原价的订单
+	inventoryPoll: false
+  };
+  module.exports = config;
 ```
 
 2 需要有 `node` 开发环境开发使用 `nodejs` v12.x 以上, 没有 nodejs 官网下载一个就行. 下载安装完后终端执行 `node -v` 查看版本. 其自带包管理器 `npm`
