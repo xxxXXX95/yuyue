@@ -31,4 +31,4 @@ jobs:
           # Job status
           status: ✅release
           # Custom message
-          message: ${{github.ref}}
+          message: ${{github.ref}}  https://github.com/${{github.repository}}/tree/master  ${{github.event.head_commit.message}}
