@@ -129,7 +129,10 @@ async function checkItemState(skuId, params, retry = 30) {
 			const { yuyueInfo = {}, stockInfo = {} } = yuyue;
 			const isStock =
 				[33, 40].includes(stockInfo.stockState) && stockInfo.isStock;
-			if (yuyueInfo.state == '4' && isStock) {
+			if (
+				(yuyueInfo.state == '4' && isStock) ||
+				(yuyueInfo.state == null && isStock)
+			) {
 				isAvailable = true;
 				break;
 			} else {
