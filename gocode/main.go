@@ -98,10 +98,9 @@ func setupProject() {
 	log.Println("下载完成, 准备解压")
 	dirName := fmt.Sprintf("%s-%s-master", owner, repo)
 	_, pathErr := os.Stat(dirName)
-
-	if os.IsExist(pathErr) {
+	if pathErr == nil {
 		// 文件夹已经存在情况
-		fmt.Println("TODO: file or dir exists")
+		log.Println("warn: dir exists")
 	}
 	os.Mkdir(dirName, os.ModePerm)
 	os.Chdir(dirName)
