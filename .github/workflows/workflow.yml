@@ -20,6 +20,8 @@ jobs:
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       - uses: actions/checkout@v2
+        with:
+          fetch-depth: 2
       - name: Get changed files using defaults
         id: changed-files
         uses: tj-actions/changed-files@v11.5
