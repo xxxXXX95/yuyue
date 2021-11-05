@@ -3,10 +3,12 @@ package main
 import (
 	"archive/tar"
 	"bufio"
+	"bytes"
 	"compress/gzip"
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"log"
 	"net/http"
 	"os"
@@ -134,8 +136,14 @@ func setupProject() {
 		Fp     string
 		Eid    string
 	}
-	if dir[0].IsDir() {
-		repoRootDir := dir[0].Name()
+	var codeDir fs.DirEntry
+	for _, entry := range dir {
+		if bytes.Contains([]byte(entry.Name()), []byte(fmt.Sprintf("%s-%s", owner, repo))) {
+			codeDir = entry
+		}
+	}
+	if codeDir != nil {
+		repoRootDir := codeDir.Name()
 		repoRootDirPath := filepath.Join(cwd,
 			repoRootDir)
 		configJsPath := filepath.Join(repoRootDir, "config.js")
