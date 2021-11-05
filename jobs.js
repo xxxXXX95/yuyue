@@ -272,7 +272,7 @@ async function submitOrderFromShoppingCart(
 
 	const submitOrder = async () => {
 		const isSucess = await submitOrderImpl();
-		if (isSucess && !config.inventoryPoll) {
+		if (isSucess || !config.inventoryPoll) {
 			process.exit();
 		}
 		const maxPollingTimes = config.maxPollingTimes || 100;
