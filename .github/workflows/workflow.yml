@@ -26,14 +26,15 @@ jobs:
         id: changed-files
         uses: tj-actions/changed-files@v11.5
         with:
-          files:
+          files: |
             gocode
+            .github/workflows
       - uses: actions/setup-go@v2
-        if: steps.changed-files-specific.outputs.only_changed == 'true'
+        if: steps.changed-files.outputs.any_changed == 'true'
         with:
           go-version: '^1.16.3' # The Go version to download (if necessary) and use.
       - name: Build golang
-        if: steps.changed-files-specific.outputs.only_changed == 'true'
+        if: steps.changed-files.outputs.any_changed == 'true'
         run: |
           go version
           cd gocode
@@ -41,7 +42,7 @@ jobs:
           GOARCH=amd64
           go build -o yuyue-setup-amd64.exe main.go
       - name: Upload Release Asset
-        if: steps.changed-files-specific.outputs.only_changed == 'true'
+        if: steps.changed-files.outputs.any_changed == 'true'
         id: upload-release-asset
         uses: softprops/action-gh-release@v1
         with:
