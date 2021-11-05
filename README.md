@@ -121,6 +121,10 @@ exports.forceLogin = false;
 
 8 新增`pupetter` windows 下面 280M, linux 或者 mac 下面 200M 不到
 
+## 小白福利
+
+如果上述内容看不懂, 使用windows, 不会使用cmd. [查看专为windows小白的引导式设置](windows-setup.md)
+
 ## Todo
 
 - [x] 合并抢购流程为添加购物车抢购流程的进程
