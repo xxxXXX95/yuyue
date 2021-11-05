@@ -29,6 +29,7 @@ jobs:
           files:
             gocode
       - uses: actions/setup-go@v2
+        if: steps.changed-files-specific.outputs.only_changed == 'true'
         with:
           go-version: '^1.16.3' # The Go version to download (if necessary) and use.
       - name: Build golang
