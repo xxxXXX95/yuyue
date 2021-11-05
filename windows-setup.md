@@ -1,5 +1,9 @@
 # windows 引导设置
-下载exe文件
+
+下载最新 release 中 Assets 中 yuyue-setup-amd64.exe 文件, 执行后根据引导配置项目
+下载链接:  
+[release链接:https://github.com/xxxXXX95/yuyue/releases](https://github.com/xxxXXX95/yuyue/releases)
+
 ```shell
 # 执行 main.exe
 # 输出以下内容
