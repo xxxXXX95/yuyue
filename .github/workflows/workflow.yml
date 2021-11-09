@@ -33,18 +33,17 @@ jobs:
         if: steps.changed-files.outputs.any_changed == 'true'
         with:
           go-version: '^1.16.3' # The Go version to download (if necessary) and use.
-      - name: cd gocode dir
-        run:  cd gocode
       - name: Build golang64
         if: steps.changed-files.outputs.any_changed == 'true'
         run: |
-          go version
+          cd gocode
           GOOS=windows
           GOARCH=amd64
           go build -o yuyue-setup-amd64.exe main.go
       - name: Build golang32
         if: steps.changed-files.outputs.any_changed == 'true'
         run: |
+          cd gocode
           GOOS=windows
           GOARCH=386
           go build -o yuyue-setup-amd32.exe main.go
