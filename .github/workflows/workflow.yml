@@ -33,20 +33,29 @@ jobs:
         if: steps.changed-files.outputs.any_changed == 'true'
         with:
           go-version: '^1.16.3' # The Go version to download (if necessary) and use.
-      - name: Build golang
+      - name: cd gocode dir
+        run:  cd gocode
+      - name: Build golang64
         if: steps.changed-files.outputs.any_changed == 'true'
         run: |
           go version
-          cd gocode
           GOOS=windows
           GOARCH=amd64
           go build -o yuyue-setup-amd64.exe main.go
+      - name: Build golang32
+        if: steps.changed-files.outputs.any_changed == 'true'
+        run: |
+          GOOS=windows
+          GOARCH=386
+          go build -o yuyue-setup-amd32.exe main.go
       - name: Upload Release Asset
         if: steps.changed-files.outputs.any_changed == 'true'
         id: upload-release-asset
         uses: softprops/action-gh-release@v1
         with:
-          files: gocode/yuyue-setup-amd64.exe
+          files: |
+            gocode/yuyue-setup-amd64.exe
+            gocode/yuyue-setup-amd32.exe
       - name: Telegram sender
         # You may pin to the exact commit or the version.
         # uses: robotomize/notify-telegram@f2821d117115d48ccbbde7609d2029603ee55b7e
