@@ -983,6 +983,17 @@ class Tools {
 		}
 		return [false];
 	};
+	safeMock = (fn, execute = true) => {
+		if (process.env.debug === 'debug') {
+			try {
+				if (execute) {
+					fn();
+				}
+			} catch (e) {
+				console.error(e);
+			}
+		}
+	};
 }
 
 module.exports = Tools;

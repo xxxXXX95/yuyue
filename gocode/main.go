@@ -3,10 +3,12 @@ package main
 import (
 	"archive/tar"
 	"bufio"
+	"bytes"
 	"compress/gzip"
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"log"
 	"net/http"
 	"os"
@@ -96,10 +98,9 @@ func setupProject() {
 	log.Println("下载完成, 准备解压")
 	dirName := fmt.Sprintf("%s-%s-master", owner, repo)
 	_, pathErr := os.Stat(dirName)
-
-	if os.IsExist(pathErr) {
+	if pathErr == nil {
 		// 文件夹已经存在情况
-		fmt.Println("TODO: file or dir exists")
+		log.Println("warn: dir exists")
 	}
 	os.Mkdir(dirName, os.ModePerm)
 	os.Chdir(dirName)
@@ -134,8 +135,14 @@ func setupProject() {
 		Fp     string
 		Eid    string
 	}
-	if dir[0].IsDir() {
-		repoRootDir := dir[0].Name()
+	var codeDir fs.DirEntry
+	for _, entry := range dir {
+		if bytes.Contains([]byte(entry.Name()), []byte(fmt.Sprintf("%s-%s", owner, repo))) {
+			codeDir = entry
+		}
+	}
+	if codeDir != nil {
+		repoRootDir := codeDir.Name()
 		repoRootDirPath := filepath.Join(cwd,
 			repoRootDir)
 		configJsPath := filepath.Join(repoRootDir, "config.js")
