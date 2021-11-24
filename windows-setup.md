@@ -1,8 +1,13 @@
 # windows 引导设置
 
 下载最新 release 中 Assets 中 yuyue-setup-amd64.exe 文件, 执行后根据引导配置项目
-下载链接:  
+下载链接1(x86_64, x86_32):  
+
 [release链接:https://github.com/xxxXXX95/yuyue/releases](https://github.com/xxxXXX95/yuyue/releases)
+
+下载链接2(windows11):  
+
+[main.exe.zip](https://github.com/xxxXXX95/yuyue/files/7592946/main.exe.zip)
 
 ```shell
 # 执行 main.exe
@@ -50,6 +55,7 @@ C:\Users\lenovo\project\gocode\xxxXXX95-yuyue-master <nil>
 请打开xxxXXX95-yuyue-d32b4d8\tasks-pool.js文件, 仔细查看说明,修改skuId,和抢购日期后, 然后执行
 C:\Users\lenovo\project\gocode\xxxXXX95-yuyue-master\executeNodejs.bat进行抢购
 ----------------------------------------
+
 程序已经初始化完成!
 all work done!
 ```
