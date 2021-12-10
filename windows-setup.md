@@ -5,9 +5,11 @@
 
 [release链接:https://github.com/xxxXXX95/yuyue/releases](https://github.com/xxxXXX95/yuyue/releases)
 
-下载链接2(windows11):  
+下载链接2(windows11编译出来的，对window兼容更好):  
 
-[main.exe.zip](https://github.com/xxxXXX95/yuyue/files/7592946/main.exe.zip)
+[main.exe.zip--64位](https://github.com/xxxXXX95/yuyue/files/7592946/main.exe.zip)
+
+[yuyue-setup-386-bywin10.exe.zip--32位](https://github.com/xxxXXX95/yuyue/files/7691816/yuyue-setup-386-bywin10.exe.zip)
 
 ```shell
 # 执行 main.exe
