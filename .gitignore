@@ -10,3 +10,4 @@ test.js
 coverage
 screenshot*
 *.exe
+lib

@@ -1,0 +1,11 @@
+{
+	"compilerOptions": {
+		"outDir": "./lib",
+		"allowJs": true,
+		"target": "esnext",
+		"sourceMap": true,
+		"moduleResolution": "Node",
+		"declaration": true
+	},
+	"include": ["./src/request.ts"]
+}
