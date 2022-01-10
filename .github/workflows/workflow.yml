@@ -54,8 +54,8 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            gocode/yuyue-setup-amd64.exe
-            gocode/yuyue-setup-amd32.exe
+            gocode\yuyue-setup-amd64.exe
+            gocode\yuyue-setup-amd32.exe
       - name: Telegram sender
         # You may pin to the exact commit or the version.
         # uses: robotomize/notify-telegram@f2821d117115d48ccbbde7609d2029603ee55b7e
