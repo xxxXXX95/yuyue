@@ -40,15 +40,13 @@ jobs:
         if: steps.changed-files.outputs.any_changed == 'true'
         run: |
           cd gocode
-          GOOS=windows
-          GOARCH=amd64
+          set GOARCH=amd64
           go build -o yuyue-setup-amd64.exe main.go
       - name: Build golang32
         if: steps.changed-files.outputs.any_changed == 'true'
         run: |
           cd gocode
-          GOOS=windows
-          GOARCH=386
+          set GOARCH=386
           go build -o yuyue-setup-amd32.exe main.go
       - name: Upload Release Asset
         if: steps.changed-files.outputs.any_changed == 'true'
