@@ -652,14 +652,14 @@ class Tools {
 		const res = await this.request(url + `?${qs.stringify(payload)}`, {
 			headers
 		});
-		if (res.url.indexOf('https://cart.jd.com/addToCart.html') !== -1) {
-			const text = await res.text();
+		if (
+			// res.url.indexOf('https://cart.jd.com/addToCart.html') !== -1 ||
+			res.url.indexOf('https://cart.jd.com/gateResult') !== -1
+		) {
+			// const text = await res.text();
 			// const text.match()
-			const isSuccess = text.match(/(class="ftx-02")/i)[1];
-			return {
-				pageUrl: `https://cart.jd.com/addToCart.html`,
-				msg: isSuccess ? '已经成功添加购物车' : '添加购物车失败'
-			};
+			// const isSuccess = text.match(/(class="ftx-02")/i)[1];
+			return true
 		}
 		if (
 			res.url.indexOf(`https://cart.jd.com/cart_asyc_index_utf8.html`) !== -1
