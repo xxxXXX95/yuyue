@@ -653,7 +653,7 @@ class Tools {
 			headers
 		});
 		if (
-			// res.url.indexOf('https://cart.jd.com/addToCart.html') !== -1 ||
+			res.url.indexOf('https://cart.jd.com/addToCart.html') !== -1 ||
 			res.url.indexOf('https://cart.jd.com/gateResult') !== -1
 		) {
 			// const text = await res.text();
