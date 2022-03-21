@@ -14,7 +14,8 @@ const getBrowser = async () => {
 			args: [
 				'--no-sandbox',
 				'–disable-gpu', // GPU硬件加速
-				'–no-first-run' // 没有设置首页。在启动的时候，就会打开一个空白页面。
+				'–no-first-run', // 没有设置首页。在启动的时候，就会打开一个空白页面。
+				'--disable-blink-features=AutomationControlled'
 			]
 		};
 		if (isDebug) {

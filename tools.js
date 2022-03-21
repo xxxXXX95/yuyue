@@ -438,6 +438,10 @@ class Tools {
 					`https://itemko.jd.com/itemShowBtn?skuId=${skuId}&callback=fn131231`
 				);
 				const url = this.parseJsonp(await r.text()).url;
+				if (!url) {
+					console.log('未进入到秒杀结算页面');
+					break;
+				}
 				res = await page.goto('https:' + url);
 
 				continue;
@@ -463,6 +467,7 @@ class Tools {
 	};
 
 	getOrderData = async (skuId, retry = 20) => {
+		if (!this.takHandle) return;
 		while (retry--) {
 			try {
 				console.info('生成提交抢购订单所需参数...', retry);
@@ -540,6 +545,11 @@ class Tools {
 		// 其他是同步代码不会出错
 		let data = this.initInfo;
 		if (!data) {
+			await this.getTakIdHandle(skuId);
+			if (!this.takHandle) {
+				console.log('TakId关键参数没获取到');
+				return {};
+			}
 			data = await this.getOrderData(skuId);
 		}
 		if (!data) {
@@ -659,7 +669,7 @@ class Tools {
 			// const text = await res.text();
 			// const text.match()
 			// const isSuccess = text.match(/(class="ftx-02")/i)[1];
-			return true
+			return true;
 		}
 		if (
 			res.url.indexOf(`https://cart.jd.com/cart_asyc_index_utf8.html`) !== -1
