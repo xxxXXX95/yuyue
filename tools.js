@@ -583,12 +583,12 @@ class Tools {
 			return {};
 		}
 	};
-	sendToWechat = message => {
+	sendToWechat = async (message, success) => {
 		if (!message) return;
 		if (!config.messenger) return;
-		const url = `http://sc.ftqq.com/${this.config.sckey}.send`;
+		const url = `https://sctapi.ftqq.com/${this.config.sckey}.send`;
 		const payload = {
-			text: '抢购结果',
+			title: success ? '抢购成功✅' : '抢购失败❌',
 			desp: message
 		};
 		return this.request(url + `?${qs.stringify(payload)}`);

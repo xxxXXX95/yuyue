@@ -75,7 +75,7 @@ async function submitOrderFromItemDetailPage(
 			await helper.submitOrder(skuId).then(async r => {
 				console.log(r);
 				if (r.success) {
-					await helper.sendToWechat(r);
+					await helper.sendToWechat(r, true);
 					process.exit();
 				}
 				if (i === concurrency) {
@@ -373,7 +373,7 @@ async function submitOrderFromShoppingCart(
 						now
 					).format('YYYY-MM-DD HH:mm:ss.SSS')}`;
 					console.log(text);
-					await helper.sendToWechat(text);
+					await helper.sendToWechat(text, true);
 					return true;
 				} else {
 					if (res.noStockSkuIds) {
