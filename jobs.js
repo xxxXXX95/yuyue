@@ -193,6 +193,7 @@ async function submitOrderFromShoppingCart(
 	let times = 0;
 	//现在只支持一个
 	const skuId = skuIds[0];
+	console.log('获取库存信息参数:', skuId, params[skuId]);
 	while (times <= maxPollingTimes) {
 		times++;
 		try {
@@ -470,7 +471,13 @@ async function getSkusData(areaId) {
  */
 async function getPageConfig(skuId, area) {
 	// 访问详情页 item.xxx.com/skuId.html
-	const page = await getPage();
+	const filter = request => {
+		const sourceType = request.resourceType();
+		const isDocument = sourceType === 'document';
+		return isDocument;
+	};
+
+	const page = await getPage(filter);
 	const url = `https://item.jd.com/${skuId}.html`;
 	const cookies = await helper.reqTools.getCookies(url);
 	await page.setCookie(
