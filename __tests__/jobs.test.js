@@ -5,22 +5,6 @@ const jobs = require('../jobs');
 const { isSkuInCart, submitOrderProcess, getPageConfig, __RewireAPI__ } = jobs;
 
 jest.mock('node-fetch');
-jest.mock(
-	'../config',
-	() => {
-		return {
-			__esModule: true,
-			userAgent: 'jest',
-			messenger: false,
-			sckey: '',
-			eid: 'eid1234',
-			fp: 'fp1234',
-			pwd: '',
-			areaId: '1_1_1'
-		};
-	},
-	{ virtual: true }
-);
 jest.mock('../request', () => {
 	const Request = jest.requireActual('../request');
 	return function () {
