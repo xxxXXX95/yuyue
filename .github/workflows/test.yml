@@ -1,0 +1,28 @@
+name: test
+
+on:
+  pull_request:
+    # Sequence of patterns matched against refs/heads
+    branches:
+      - master
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v3
+      - name: cache node_modules
+        id: node_modules_cache_id
+        uses: actions/cache@v3
+        with:
+          path: node_modules
+          key: node_modules-${{ hashFiles('**/yarn.lock') }}
+
+      - name: yarn install
+        if: steps.node_modules_cache_id.outputs.cache-hit != 'true'
+        run: yarn
+
+      - name: run test
+        run: yarn run test
