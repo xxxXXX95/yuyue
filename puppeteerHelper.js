@@ -46,7 +46,9 @@ const getPage = async filter => {
 		}
 	});
 	page.on('pageerror', e => {
-		console.log(e);
+		if(isDebug) {
+			console.log(e)
+		}
 	});
 
 	return page;

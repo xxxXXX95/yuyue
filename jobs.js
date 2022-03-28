@@ -6,7 +6,7 @@ const { Cookie } = require('tough-cookie');
 const helper = new ToolsClass();
 const { sleep, safeMock } = helper;
 const { getPage, setUpBrowser, getHandlerValue } = require('./puppeteerHelper');
-const config = require('./config.js');
+const config = require('./config');
 
 // 登录
 async function login(directly = false) {
@@ -169,7 +169,7 @@ async function checkItemState(skuId, params, retry = 30) {
  * @param {*} skuId
  * 从购物车提交订单
  */
-async function submitOrderFromShoppingCart(
+const submitOrderFromShoppingCart = async function (
 	date,
 	skuIds,
 	params = {},
@@ -181,7 +181,7 @@ async function submitOrderFromShoppingCart(
 		// 尝试取cookie
 		await helper.requestCartPage();
 	} catch (e) {
-		console.log('访问购物车页面出错');
+		console.log(e, '访问购物车页面出错');
 	}
 	const notInCartIds = await isSkuInCart(skuIds, area);
 	const skuIdsSet = new Set(skuIds);
@@ -403,7 +403,7 @@ async function submitOrderFromShoppingCart(
 		return false;
 	};
 	await timer(date, submitOrder);
-}
+};
 /**
  *
  * @param {*} skuId
@@ -489,9 +489,27 @@ async function getPageConfig(skuId, area) {
 			url: 'https://www.jd.com'
 		}))
 	);
-	await page.goto(url, {
-		waitUntil: 'domcontentloaded'
-	});
+
+	let times = 3;
+	while (times > 0) {
+		times--;
+		try {
+			const res = await page.goto(url, {
+				waitUntil: 'domcontentloaded'
+			});
+			if (res.status() !== 200) {
+				throw Error('status 非200');
+			}
+			break;
+		} catch (e) {
+			safeMock(() => {
+				console.log(e);
+			});
+			if (times === 0) {
+				throw e;
+			}
+		}
+	}
 
 	const product = await page.evaluateHandle(() => pageConfig.product);
 	const get = await getHandlerValue(product);
@@ -518,7 +536,7 @@ async function getPageConfig(skuId, area) {
 }
 
 // 提交订单, 此流程对应从购物车提交订单流程
-async function submitOrderProcess(
+const submitOrderProcess = async function (
 	date,
 	skuId,
 	areaId,
@@ -545,7 +563,6 @@ async function submitOrderProcess(
 			: beforeRunTaskMinues < 6
 			? beforeRunTaskMinues
 			: 6;
-
 	if (m === 2) {
 		await Promise.all(
 			skuIds.map(skuId =>
@@ -573,9 +590,9 @@ async function submitOrderProcess(
 							console.log('setCookie failed');
 						}
 					})
-					.catch(async _ => {
+					.catch(async e => {
 						errorSet.add(skuId);
-						console.log(`${skuId},访问详情页出错`);
+						console.log(`${skuId},访问详情页出错`, e);
 					})
 			)
 		);
@@ -595,9 +612,16 @@ async function submitOrderProcess(
 				if (now + m * 60 * 1000 >= date) {
 					for (let i = 0; i < skuIds.length; i++) {
 						const skuId = skuIds[i];
-						if (isKOSet.has(skuId)) return;
-						const [isKO, params] = await getPageConfig(skuId, areaId);
-						allSKUParam[skuId] = params;
+						if (isKOSet.has(skuId)) continue;
+						const [isKO, params] = await getPageConfig(skuId, areaId).catch(
+							e => {
+								// errorSet.add(skuId);
+								console.log(`${skuId},访问详情页出错`, e);
+							}
+						);
+						if (params) {
+							allSKUParam[skuId] = params;
+						}
 						if (isKO || forceKO) {
 							isKOSet.add(skuId);
 						}
@@ -618,6 +642,9 @@ async function submitOrderProcess(
 				}
 			}, 10000);
 		});
+		if (!allSKUParam[skuId]) {
+			errorSet.add(skuId);
+		}
 	}
 
 	// 购物车商品
@@ -641,6 +668,7 @@ async function submitOrderProcess(
 		}
 		return;
 	}
+	console.log(cartSkuIds, 'ids');
 	if (cartSkuIds.length > 0) {
 		if (cartSkuIds.length > 1) {
 			console.log('发现你添加了多个商品, 如果其中一个无货则整个订单会提交失败');
@@ -656,10 +684,12 @@ async function submitOrderProcess(
 			maxWaitingMS
 		);
 	}
-}
+};
 
 exports.login = login;
 exports.helper = helper;
 exports.submitOrderProcess = submitOrderProcess;
 exports.submitOrderFromItemDetailPage = submitOrderFromItemDetailPage;
 exports.isSkuInCart = isSkuInCart;
+exports.getPageConfig = getPageConfig;
+exports.submitOrderFromShoppingCart = submitOrderFromShoppingCart;
