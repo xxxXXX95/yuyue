@@ -6,7 +6,7 @@ const { Cookie } = require('tough-cookie');
 const helper = new ToolsClass();
 const { sleep, safeMock } = helper;
 const { getPage, setUpBrowser, getHandlerValue } = require('./puppeteerHelper');
-const config = require('./config.js');
+const config = require('./config');
 
 // 登录
 async function login(directly = false) {
