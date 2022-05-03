@@ -984,11 +984,11 @@ class Tools {
 					}
 				}
 			} catch (e) {
-				console.log('勾选商品失败:', index);
+				console.log('勾选商品失败:', i);
 			}
 
 			if (i - 1 !== 0) {
-				await this.sleep(50);
+				await this.sleep(150);
 			}
 		}
 		return [false];
