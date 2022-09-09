@@ -466,7 +466,7 @@ class Tools {
 		};
 	};
 
-	getOrderData = async (skuId, retry = 20) => {
+	getOrderData = async (skuId, retry = 30) => {
 		if (!this.takHandle) return;
 		while (retry--) {
 			try {
@@ -521,7 +521,7 @@ class Tools {
 			} catch (e) {
 				console.error('获取订单地址等信息失败, 将重试');
 			}
-			await new Promise(r => setTimeout(r, 100));
+			await new Promise(r => setTimeout(r, 300));
 		}
 	};
 
