@@ -2,6 +2,7 @@ const cluster = require('cluster');
 const path = require('path');
 const fs = require('fs');
 const dayjs = require('./dayjs.min.js');
+require('./log');
 
 const filePath = path.join(__dirname, 'config.js');
 try {
@@ -107,3 +108,4 @@ if (cluster.isWorker) {
 
 	console.log('process.master:', process.pid);
 }
+
