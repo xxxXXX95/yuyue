@@ -1,9 +1,10 @@
 const winston = require('winston');
 const { format } = winston;
-const { combine, timestamp, label, printf } = format;
+const util = require('util');
+const { combine, timestamp, label, printf, colorize } = format;
 
 const myFormat = printf(({ level, message, timestamp }) => {
-	return `${timestamp}-${level}: ${message}`;
+	return util.format('%s-%s', timestamp, level, message);
 });
 
 const logger = winston.createLogger({
@@ -13,6 +14,7 @@ const logger = winston.createLogger({
 		timestamp({
 			format: 'HH:mm:ss'
 		}),
+		colorize(),
 		myFormat
 	),
 	defaultMeta: { service: 'yuye' },
@@ -22,22 +24,22 @@ const logger = winston.createLogger({
 			level: 'error'
 		}),
 		new winston.transports.File({ filename: './log/combined.log' }),
-		new winston.transports.Console()
+		new winston.transports.Console({
+			level: 'silly'
+		})
 	]
 });
 
 Object.assign(console, {
 	log(...arg) {
-		logger.info(arg.join(''));
+		logger.info(util.format(...arg));
 	},
 	error(...arg) {
-		logger.error(arg.join(''));
+		logger.error(util.format(...arg));
 	},
 	info(...arg) {
-		logger.info(arg.join(''));
+		logger.info(util.format(...arg));
 	}
 });
-
-
 module.exports = logger;
 
